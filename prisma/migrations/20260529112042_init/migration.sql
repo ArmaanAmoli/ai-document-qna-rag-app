@@ -1,4 +1,6 @@
 -- CreateTable
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE "Document" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,

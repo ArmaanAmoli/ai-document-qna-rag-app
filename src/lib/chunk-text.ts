@@ -1,4 +1,6 @@
-export function chunkText(text:string , maxLength = 500 , overlap = 50):{content:string , index:number}[]{
+import { Chunk } from "@/types";
+
+export function chunkText(text:string , maxLength = 500 , overlap = 50):Chunk[]{
     const chunks:{content:string ; index:number}[] = []
     let start = 0;
     let index = 0;

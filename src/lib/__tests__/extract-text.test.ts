@@ -1,6 +1,5 @@
 import { describe , expect, it } from "vitest";
 import { extractText } from "../extract-text";
-import { PDFData } from "@/types";
 
 describe('Text extraction test from pdf and text files',()=>{
     it('.txt extractor test',async()=>{

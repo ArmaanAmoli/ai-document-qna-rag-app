@@ -3,6 +3,7 @@ import { generateEmbedding } from "./embedding";
 import {prisma} from './db/prisma'
 import { createId } from "@paralleldrive/cuid2";
 import { Chunk , ChunkAndEmbedding , DocumentChunkTS , DocumentTS} from "@/types";
+import { insertDocument } from "./db/queries/insertDocument";
 
 export async function insertDocInDatabase(text:string , filename:string , filetype:string,
     filesize:number){
@@ -33,13 +34,10 @@ export async function insertDocInDatabase(text:string , filename:string , filety
             type:filetype,
             size:filesize,
         }
-
-        
-        //DocumentChunkTS
-
-
-
-
-
-
+        try{
+            await insertDocument(document , AllChunksAndEmbedding);
+        }
+        catch (error){
+            throw new Error(`Document insertion failed in database ${error}`)
+        }
     }

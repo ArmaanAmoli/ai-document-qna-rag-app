@@ -3,11 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { join, extname, basename } from "path";
 import { extractText } from "@/lib/extract-text";
 import { PDFData } from "@/types";
-import { chunkText } from "@/lib/chunk-text";
-import { generateEmbedding } from "@/lib/embedding";
-import { prisma } from "@/lib/db/prisma";
-import { DocumentChunk } from "@/generated/prisma/client";
 import { createId } from "@paralleldrive/cuid2";
+import { insertDocInDatabase } from "@/lib/insert-doc-in-database";
 
 export async function POST(req: NextRequest) {
     try {
@@ -26,6 +23,7 @@ export async function POST(req: NextRequest) {
         //Converting file data into a Node.js Buffer
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
+        const filesize = buffer.length/(1024*1024);
 
         // directory
         const uploadDir = join(process.cwd(), 'public', 'uploads');
@@ -51,37 +49,12 @@ export async function POST(req: NextRequest) {
             extractedText = extractedData.text;
         }
 
-        // const embeddings:number[][]=[];
-        // chunks.forEach(async(chunk)=>{
-        //     const embedding = await generateEmbedding(chunk.content);
-        //     embeddings.push(embedding);
-        // });
-
-        // const prismaDocumentChunk:DocumentChunk = [];
-        // let i:number = 0;
-        
-        // embeddings.forEach((embedding)=>{
-        //     const docChunk = {
-        //         id: createId(),
-        //         documentId:documentId,
-        //         content:chunks[i].content,
-        //         embedding: embedding,
-        //         chunkIndex:chunks[i].index,
-        //     }
-        //     prismaDocumentChunk.push(docChunk);
-        //     i = i + 1;
-        // });
-
-        // i=0;
-        // const newDoc = await prisma.document.create({
-        //     data:{
-        //         id:documentId,
-        //         name:uniqueName,
-        //         type:fileExtension,
-        //         size:Buffer.length/(1024*1024),
-        //         documentChunks: prismaDocumentChunk
-        //     },
-        // });
+        try{
+            await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize)
+        }
+        catch(error){
+            throw error;
+        }
 
         return NextResponse.json({ success: true, message: `File saved successfully received` })
     } catch (error) {

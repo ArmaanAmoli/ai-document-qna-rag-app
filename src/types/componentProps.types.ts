@@ -8,3 +8,10 @@ export interface MessagePropInterface{
     file:File|null;
     setFile: Dispatch<SetStateAction<File|null>>;
 }
+
+export interface UploadedFile{
+    file:File;
+    name:string;
+    size:number;
+    type:string;
+}

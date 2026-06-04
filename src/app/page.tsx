@@ -13,9 +13,9 @@ export default function Chat() {
       
       <div className="flex flex-col flex-1 max-w-xs border border-white/15 h-full py-8 px-8 rounded-3xl">Chat History</div>
       <main className="relative flex flex-1 w-full h-full flex-col items-center 
-      justify-between py-8 px-8 bg-white dark:bg-black sm:items-start border 
+      justify-between py-8 px-24 bg-white dark:bg-black sm:items-start border 
       rounded-3xl border-white/15">
-        
+        Hey their
         <Message prompt={prompt}  setPrompt={setPrompt} file={file}  setFile={setFile} />
 
       </main>

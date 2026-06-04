@@ -13,6 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  icons:{
+    icon:'./icons/RecallAi.svg',
+  },
   title: "Recall AI",
   description: "AI Document Q&A (RAG App) — Upload PDFs/docs, ask questions, get answers using RAG (Retrieval-Augmented Generation) with Next.js, TypeScript, PostgreSQL + pgvector, and LLMs.",
 };

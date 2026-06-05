@@ -1,6 +1,8 @@
 "use client";
 
-import { Message } from "@/components/messageBox";
+import { MessageBox } from "@/components/ChatMessageBox";
+
+import { Prompt } from "@/components/promptBox";
 import Image from "next/image";
 import { useState } from "react";
 export default function Chat() {
@@ -15,8 +17,8 @@ export default function Chat() {
       <main className="relative flex flex-1 w-full h-full flex-col items-center 
       justify-between py-8 px-24 bg-white dark:bg-black sm:items-start border 
       rounded-3xl border-white/15">
-        Hey their
-        <Message prompt={prompt}  setPrompt={setPrompt} file={file}  setFile={setFile} />
+        <MessageBox message={"hi their"}/>
+        <Prompt prompt={prompt}  setPrompt={setPrompt} file={file}  setFile={setFile} />
 
       </main>
     </div>

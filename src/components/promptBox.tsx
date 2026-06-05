@@ -1,13 +1,25 @@
 "use client";
 import { MessagePropInterface } from "@/types/componentProps.types";
 import { useState , useRef} from "react"
-export function Message(props: MessagePropInterface) {
+export function Prompt(props: MessagePropInterface) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     // const [prompt, setPrompt] = useState("");
+
+    const sendPrompt = async ()=>{
+        // const response = await fetch('/api/upload',{
+        //     method:'POST',
+        //     body:
+        // })
+    }
     return (
         <div className="absolute bottom-4 -translate-x-1/2 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
-        left-1/2 w-[600px] h-[54px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5">
+        left-1/2 w-[600px] min-h-[54px] max-h-[100px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5">
+            
             <div className="flex flex-1 flex-col">
+                {props.file && <div>
+                {`${props.file?.name}`}
+
+                </div>}
                 <input
                     className="hidden"
                     type="file"
@@ -16,11 +28,11 @@ export function Message(props: MessagePropInterface) {
                     ref={fileInputRef} >
                 </input>
 
-                <input className="flex flex-1 focus:outline-none"
-                    type="text" value={props.prompt}
+                <textarea className="flex flex-1 focus:outline-none resize-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                    value={props.prompt}
                     onChange={(event) => { props.setPrompt(event.target.value) }}
                     placeholder="How can I help you today?">
-                </input>
+                </textarea>
 
                 
             </div>
@@ -38,6 +50,9 @@ export function Message(props: MessagePropInterface) {
             </button>
 
             <button type="button"
+                onClick={()=>{
+                    sendPrompt();
+                }}
                 className="h-10 w-10 border border-white/20 rounded-full flex justify-center items-center overflow-hidden">
                 <img
                     src="./icons/send.svg"

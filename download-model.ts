@@ -1,5 +1,4 @@
 import { Agent, setGlobalDispatcher } from 'undici';
-import * as fs from 'fs';
 import * as path from 'path';
 
 // 1. Bypass Node's default 10-second fetch timeout limit (Set to 10 minutes)

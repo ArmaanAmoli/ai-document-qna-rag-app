@@ -6,7 +6,7 @@ import { Chunk , ChunkAndEmbedding , DocumentChunkTS , DocumentTS} from "@/types
 import { insertDocument } from "./db/queries/insertDocument";
 
 export async function insertDocInDatabase(text:string , filename:string , filetype:string,
-    filesize:number){
+    filesize:number):Promise<string>{
 
         /*
         create chunks of the document
@@ -40,4 +40,5 @@ export async function insertDocInDatabase(text:string , filename:string , filety
         catch (error){
             throw new Error(`Document insertion failed in database ${error}`)
         }
+        return documentID;
     }

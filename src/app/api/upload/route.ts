@@ -50,13 +50,14 @@ export async function POST(req: NextRequest) {
         }
 
         try{
-            await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize)
+            const docId = await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize)
+            return NextResponse.json({ success: true, message: `File saved successfully received` , documentId: docId});
+
         }
         catch(error){
             throw error;
         }
 
-        return NextResponse.json({ success: true, message: `File saved successfully received` })
     } catch (error) {
         console.log(`file saving failed: `, error);
         return NextResponse.json({ error: 'Server error saving file' }, { status: 500 });

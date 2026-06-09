@@ -9,7 +9,7 @@ describe('Text extraction test from pdf and text files',()=>{
 
     it('.pdf extractor test' ,async()=>{
         const data:any = await extractText('samplePDF.pdf');
-        expect(data.text).toContain('This is a sample text');
+        expect(data).toContain('This is a sample text');
     });
 
     it('testing other file types (should throw error)' , async()=>{

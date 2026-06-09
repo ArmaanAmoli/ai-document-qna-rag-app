@@ -1,15 +1,14 @@
-import {env , pipeline} from '@huggingface/transformers'
+import { CohereClient } from "cohere-ai";
+import 'dotenv/config';
+// console.log(process.env.COHERE_API_KEY);
+const cohere = new CohereClient({ token: process.env.COHERE_API_KEY })
+export async function generateEmbedding(text: string): Promise<number[]> {
 
-// Disable all external network calls to the Hugging Face Hub
-env.allowRemoteModels = false;
-
-// Tell the pipeline exactly where your root local models folder is
-env.localModelPath = 'models';
-
-export async function generateEmbedding(text:string):Promise<number[]>{
-    
-    const extractor = await pipeline('feature-extraction' , 'Xenova/all-MiniLM-L6-v2');
-    
-    const result = await extractor(text , {pooling:'mean' , normalize:true});
-    return Array.from(result.data);
+    const response:any = await cohere.embed({
+        texts: [text],
+        model: "embed-english-light-v3.0",
+        inputType: "search_document",
+    });
+    return response.embeddings[0] as number[];
 }
+

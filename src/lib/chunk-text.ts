@@ -1,6 +1,16 @@
 import { Chunk } from "@/types";
+import { serialize } from 'v8';
 
-export function chunkText(text:string , maxLength = 500 , overlap = 50):Chunk[]{
+function getSizeInMB(dataStructure: any): number {
+  // serialize() converts the object to a binary V8 buffer
+  const bytes = serialize(dataStructure).byteLength;
+  return bytes / (1024 * 1024);
+}
+
+
+export function chunkText(text:string , maxLength = 1000 , overlap = 50):Chunk[]{
+    console.log("chunking started");
+
     const chunks:{content:string ; index:number}[] = []
     let start = 0;
     let index = 0;
@@ -15,7 +25,10 @@ export function chunkText(text:string , maxLength = 500 , overlap = 50):Chunk[]{
         }
         chunks.push({content:text.substring(start , end).trim() , index});
         index++;
-        start = end - overlap //move back by over lap to avoide breaking sentence
+        const nextStart = end - overlap //move back by over lap to avoide breaking sentence
+        start = nextStart > start ? nextStart:end;
+        console.log(`Memory allocation: ${getSizeInMB(chunks).toFixed(2)} MB`);
     }
+    console.log("chunking done")
     return chunks;
 }

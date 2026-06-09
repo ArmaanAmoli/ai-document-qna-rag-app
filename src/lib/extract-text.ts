@@ -4,7 +4,7 @@ import { loadTextFile } from "./load-text-file";
 import { loadPDF } from "./load-pdf-file";
 import { PDFData } from "@/types";
 
-export async function extractText(uniqueName: string): Promise<string | PDFData> {
+export async function extractText(uniqueName: string): Promise<string> {
     try {
         const fileExtension = extname(uniqueName);
         if (fileExtension === ".txt") {
@@ -12,7 +12,7 @@ export async function extractText(uniqueName: string): Promise<string | PDFData>
             return data;
         }
         else if (fileExtension === ".pdf") {
-            const data: PDFData = await loadPDF(uniqueName);
+            const data: string = loadPDF(uniqueName);
             return data;
         }
         else {

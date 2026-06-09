@@ -41,13 +41,9 @@ export async function POST(req: NextRequest) {
         const extractedData:string|PDFData = await extractText(uniqueName);
 
         // // breaking text into small chunks
-        let extractedText = "";
-        if(typeof extractedData === 'string'){
-            extractedText = extractedData;
-        }
-        else{
-            extractedText = extractedData.text;
-        }
+        let extractedText = extractedData;
+
+        console.log("text extracted successfully")
 
         try{
             const docId = await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize)

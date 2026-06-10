@@ -8,7 +8,7 @@ function getSizeInMB(dataStructure: any): number {
 }
 
 
-export function chunkText(text:string , maxLength = 1000 , overlap = 50):Chunk[]{
+export function chunkText(text:string , maxLength = 500 , overlap = 50):Chunk[]{
     console.log("chunking started");
 
     const chunks:{content:string ; index:number}[] = []

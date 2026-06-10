@@ -3,12 +3,14 @@ import 'dotenv/config';
 // console.log(process.env.COHERE_API_KEY);
 const cohere = new CohereClient({ token: process.env.COHERE_API_KEY })
 export async function generateEmbedding(text: string): Promise<number[]> {
+    const texts = [text];
 
-    const response:any = await cohere.embed({
-        texts: [text],
-        model: "embed-english-light-v3.0",
-        inputType: "search_document",
-    });
-    return response.embeddings[0] as number[];
+    const response:any = await fetch("http://localhost:8001/embed" , {
+        method:"POST",
+        headers:{"Content-Type": "application/json"},
+        body:JSON.stringify({texts}),
+    })
+    const data = await response.json();
+    return data.embeddings[0];
 }
 

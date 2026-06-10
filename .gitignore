@@ -46,4 +46,4 @@ next-env.d.ts
 
 /models
 
-/fastapi-server/.venv
+/fastapi-server/.venv/*

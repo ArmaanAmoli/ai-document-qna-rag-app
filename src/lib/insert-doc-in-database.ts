@@ -18,16 +18,29 @@ export async function insertDocInDatabase(text: string, filename: string, filety
     */
     const documentID = createId();
 
-    const AllChunksAndEmbedding: ChunkAndEmbedding[] = [];
 
     //Chunking;
+
     const chunks: Chunk[] = chunkText(text, 400, 50);
+    const chunkTextArray:string[] = chunks.map((value , index)=>{
+        const text:string = value.content;
+        return text;
+    });
+
+    const embededArray:number[][] = await generateEmbedding(chunkTextArray);
+
+    const AllChunksAndEmbedding: ChunkAndEmbedding[] = embededArray.map((value , index)=>{
+        return {
+            chunk:chunks[index],
+            embedding:value
+        };
+    });
 
     //Embedding on each chunk
-    chunks.forEach(async (chunk) => {
-        const embedding = await generateEmbedding(chunk.content);
-        AllChunksAndEmbedding.push({ chunk: chunk, embedding: embedding });
-    })
+    // chunks.forEach(async (chunk) => {
+    //     const embedding = await generateEmbedding(chunk.content);
+    //     AllChunksAndEmbedding.push({ chunk: chunk, embedding: embedding });
+    // });
 
     console.log("all chunks embedded")
 

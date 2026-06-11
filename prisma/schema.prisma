@@ -16,7 +16,7 @@ model Document {
   id             String          @id @default(cuid())
   name           String
   type           String
-  size           Int
+  size           Float           @db.Real
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   documentChunks DocumentChunk[] 

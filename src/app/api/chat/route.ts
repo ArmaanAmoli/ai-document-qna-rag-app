@@ -2,11 +2,23 @@ import { searchContent } from "@/lib/db/queries/searchContent";
 import { generateEmbedding } from "@/lib/embedding";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
-export async function POST(documentId: string, question: string) {
+export async function POST(request : Request) {
+    const body = await request.json();
+    console.log(body);
+
+    const {documentId , question} = body;
+
+    console.log(question);
+
     // start with enbedding the quetion
-    const embeddedQuestion = await generateEmbedding(question);
+    const questionArr:string[] = [question];
+    
+    const embeddedQuestion = await generateEmbedding(questionArr);
+    console.log(typeof embeddedQuestion);
+    console.log(embeddedQuestion);
     // Do a vector search over the vector db
-    const contextString: string = await searchContent(documentId, embeddedQuestion);
+    const embeddedQuestionE = embeddedQuestion[0];
+    const contextString: string = await searchContent(documentId, embeddedQuestionE);
 
     //creating LLM prompt
 
@@ -44,13 +56,11 @@ Do not include any text after the closing </Answer> tag.`
 
     const ai = new GoogleGenAI({});
     const responseStream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash-native-audio-dialog",
+        model: "gemma-4-31b-it",
         contents: prompt,
         config: {
             systemInstruction: instruction,
-            thinkingConfig: {
-                thinkingLevel: ThinkingLevel.MEDIUM,
-            }
+            
         }
     });
 

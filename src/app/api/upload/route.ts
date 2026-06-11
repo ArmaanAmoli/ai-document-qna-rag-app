@@ -56,6 +56,6 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         console.log(`file saving failed: `, error);
-        return NextResponse.json({ error: 'Server error saving file' }, { status: 500 });
+        return NextResponse.json({ success: false , error: 'Server error saving file' }, { status: 500 });
     }
 }

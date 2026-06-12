@@ -1,50 +1,69 @@
 "use client";
 import { MessagePropInterface } from "@/types/componentProps.types";
-import { useState , useRef} from "react"
+import { useState, useRef } from "react"
 export function Prompt(props: MessagePropInterface) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     // const [prompt, setPrompt] = useState("");
 
-    const sendPrompt = async ()=>{
-        const data = {
-            file:props.file
-        }
-        const response = await fetch('/api/upload',{
-            method:'POST',
-            body:JSON.stringify(data),
-        })
-        const res = await response.json();
-        if("success" in res){
-            if(res.success == true && "documentId" in res){
-                const documentId = res.documentId;
-                const body = {
-                    documentId: documentId,
-                    question:props.prompt
+    const sendPrompt = async () => {
+        if (props.file != null) {
+
+            const data = new FormData();
+            data.append('file', props.file)
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: data,
+            })
+            const res = await response.json();
+            if ("success" in res) {
+                if (res.success == true && "documentId" in res) {
+                    const documentId = res.documentId;
+                    localStorage.setItem('documentId' , documentId);
+                    const body = {
+                        documentId: documentId,
+                        question: props.prompt
+                    }
+                    const chatResponse = await fetch('/api/chat', {
+                        method: 'POST',
+                        body: JSON.stringify(body),
+                    });
+                    const chatRes = await chatResponse.json();
+                    // console.log(chatRes);
                 }
-                const chatResponse = await fetch('/api/chat',{
-                    method:'POST',
-                    body:JSON.stringify(body),
-                });
-                const chatRes = await chatResponse.json();
-                console.log(chatResponse);
             }
+        }
+
+        else {
+            //fetching doc id from local storage
+            const documentId = localStorage.getItem("documentId")
+            console.log(documentId);
+            const body = {
+                documentId: documentId,
+                question: props.prompt
+            }
+            const chatResponse = await fetch('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
+            const chatRes = await chatResponse.json();
+            // console.log(chatRes);
         }
     }
     return (
         <div className="absolute bottom-4 -translate-x-1/2 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
         left-1/2 w-[600px] min-h-[54px] max-h-[100px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5
         bg-black/40 backdrop-blur-md">
-            
+
             <div className="flex flex-1 flex-col">
                 {props.file && <div>
-                {`${props.file?.name}`}
+                    {`${props.file?.name}`}
 
                 </div>}
                 <input
                     className="hidden"
                     type="file"
                     onChange={(event) => { props.setFile(event.target.files != null ? event.target.files[0] : null) }}
-                    accept=".pdf,.txt" 
+                    accept=".pdf,.txt"
                     ref={fileInputRef} >
                 </input>
 
@@ -54,14 +73,14 @@ export function Prompt(props: MessagePropInterface) {
                     placeholder="How can I help you today?">
                 </textarea>
 
-                
+
             </div>
 
 
             <button type="button"
                 className="h-10 w-10 border border-white/20 rounded-full flex justify-center items-center overflow-hidden hover:bg-white/20 transition-colors duration-300 ease-in-out"
-                onClick={()=>fileInputRef.current != null ? fileInputRef.current.click():null}
-                >
+                onClick={() => fileInputRef.current != null ? fileInputRef.current.click() : null}
+            >
                 <img
                     src="./icons/upload.svg"
                     className="w-6/12 h-6/12 object-contain -translate-x-[0.4px] -translate-y-[.5px]"
@@ -70,7 +89,7 @@ export function Prompt(props: MessagePropInterface) {
             </button>
 
             <button type="button"
-                onClick={()=>{
+                onClick={() => {
                     sendPrompt();
                 }}
                 className="h-10 w-10 border border-white/20 rounded-full flex justify-center items-center overflow-hidden hover:bg-white/20 hover:transition">

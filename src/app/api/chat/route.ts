@@ -14,8 +14,7 @@ export async function POST(request : Request) {
     const questionArr:string[] = [question];
     
     const embeddedQuestion = await generateEmbedding(questionArr);
-    console.log(typeof embeddedQuestion);
-    console.log(embeddedQuestion);
+    
     // Do a vector search over the vector db
     const embeddedQuestionE = embeddedQuestion[0];
     const contextString: string = await searchContent(documentId, embeddedQuestionE);

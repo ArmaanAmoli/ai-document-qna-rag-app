@@ -1,11 +1,39 @@
 "use client";
-import { MessagePropInterface } from "@/types/componentProps.types";
+import { MessagePropInterface , Message} from "@/types/componentProps.types";
 import { useState, useRef } from "react"
+import { sendChatMessage } from "@/app/services/chat-api-call";
+
 export function Prompt(props: MessagePropInterface) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    // const [prompt, setPrompt] = useState("");
+    const setMessagesArray = props.setMessagesArray;
+    const [isStreaming , setIsStreaming] = useState(false);
+
+    const displayStreamingReply = async (reply: Response) => {
+        const reader = reply.body!.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+
+        const agentId:number = Date.now()
+        const newMessageAgent:Message = {role:'agent' , id:agentId , content:""};
+        props.setMessagesArray(prev=>[...prev , newMessageAgent]);
+        setIsStreaming(true);
+        while(true){
+            const {done , value} = await reader.read();
+            if(done)break;
+            accumulated += decoder.decode(value);
+
+            //updating only the streaming message
+            setMessagesArray(prev=>prev.map(msg=>
+                msg.id===agentId?{...msg , content:accumulated}:msg
+            ));
+        }
+        setIsStreaming(false);
+    }
 
     const sendPrompt = async () => {
+        //adding user prompt to the message array
+        setMessagesArray(prev => [...prev , {role:'user' , content:props.prompt}])
+
         if (props.file != null) {
 
             const data = new FormData();
@@ -18,17 +46,10 @@ export function Prompt(props: MessagePropInterface) {
             if ("success" in res) {
                 if (res.success == true && "documentId" in res) {
                     const documentId = res.documentId;
-                    localStorage.setItem('documentId' , documentId);
-                    const body = {
-                        documentId: documentId,
-                        question: props.prompt
-                    }
-                    const chatResponse = await fetch('/api/chat', {
-                        method: 'POST',
-                        body: JSON.stringify(body),
-                    });
-                    const chatRes = await chatResponse.json();
-                    // console.log(chatRes);
+                    localStorage.setItem('documentId', documentId);
+                    const question = props.prompt;
+                    const reply = await sendChatMessage(documentId, question);
+
                 }
             }
         }
@@ -37,6 +58,7 @@ export function Prompt(props: MessagePropInterface) {
             //fetching doc id from local storage
             const documentId = localStorage.getItem("documentId")
             console.log(documentId);
+
             const body = {
                 documentId: documentId,
                 question: props.prompt

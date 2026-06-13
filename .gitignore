@@ -47,3 +47,4 @@ next-env.d.ts
 /models
 
 /fastapi-server/.venv/*
+/fastapi-server/source/__pycache__/*

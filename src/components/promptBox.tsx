@@ -9,6 +9,7 @@ export function Prompt(props: MessagePropInterface) {
     const [isStreaming , setIsStreaming] = useState(false);
 
     const displayStreamingReply = async (reply: Response) => {
+        console.log("message Streaming started");
         const reader = reply.body!.getReader();
         const decoder = new TextDecoder();
         let accumulated = '';
@@ -17,6 +18,7 @@ export function Prompt(props: MessagePropInterface) {
         const newMessageAgent:Message = {role:'agent' , id:agentId , content:""};
         props.setMessagesArray(prev=>[...prev , newMessageAgent]);
         setIsStreaming(true);
+        console.log("Reader Started")
         while(true){
             const {done , value} = await reader.read();
             if(done)break;
@@ -27,7 +29,9 @@ export function Prompt(props: MessagePropInterface) {
                 msg.id===agentId?{...msg , content:accumulated}:msg
             ));
         }
+        console.log("Reader Ended")
         setIsStreaming(false);
+        console.log("message Streaming ended");
     }
 
     const sendPrompt = async () => {
@@ -49,7 +53,7 @@ export function Prompt(props: MessagePropInterface) {
                     localStorage.setItem('documentId', documentId);
                     const question = props.prompt;
                     const reply = await sendChatMessage(documentId, question);
-
+                    await displayStreamingReply(reply);
                 }
             }
         }
@@ -57,22 +61,13 @@ export function Prompt(props: MessagePropInterface) {
         else {
             //fetching doc id from local storage
             const documentId = localStorage.getItem("documentId")
-            console.log(documentId);
-
-            const body = {
-                documentId: documentId,
-                question: props.prompt
-            }
-            const chatResponse = await fetch('/api/chat', {
-                method: 'POST',
-                body: JSON.stringify(body),
-            });
-            const chatRes = await chatResponse.json();
-            // console.log(chatRes);
+            const question = props.prompt;
+            const reply = await sendChatMessage(documentId! , question);
+            await displayStreamingReply(reply);
         }
     }
     return (
-        <div className="absolute bottom-4 -translate-x-1/2 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
+        <div className="absolute sticky bottom-0 -translate-x-1/2 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
         left-1/2 w-[600px] min-h-[54px] max-h-[100px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5
         bg-black/40 backdrop-blur-md">
 

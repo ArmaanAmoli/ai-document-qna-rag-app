@@ -55,7 +55,7 @@ Do not include any text after the closing </Answer> tag.`
 
     const ai = new GoogleGenAI({});
     const responseStream = await ai.models.generateContentStream({
-        model: "gemma-4-31b-it",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             systemInstruction: instruction,
@@ -68,10 +68,44 @@ Do not include any text after the closing </Answer> tag.`
             const encoder = new TextEncoder();
 
             try {
+                //we want to only extract the response inside <Answer> </Answer> tags
+                let buffer:string = '';
+                let isStreaming:boolean = false;
+
                 for await (const chunk of responseStream) {
-                    const text = chunk.text;
+                    let text = chunk.text;
                     if (text) {
-                        controller.enqueue(encoder.encode(text));
+                        buffer += text;
+
+                        if(!isStreaming ){
+                            isStreaming = true;
+
+                            const openingIdx = buffer.indexOf('<Answer>');
+                            if(openingIdx != -1){
+                                isStreaming = true;
+                                buffer = buffer.substring((openingIdx+('<Answer>'.length)));
+                                console.log(buffer)
+                                controller.enqueue(encoder.encode(buffer));
+                                continue;
+                            }
+                        }
+
+                        if(isStreaming){
+                            const regex = /(<\/Answer>|<\/Answe|<\/Answ|<\/Ans|<\/An|<\/A|<\/)$/;
+                            if(regex.test(text)){
+                                isStreaming = false;
+                                const newText = text.substring(0 , text.indexOf('<'));
+                                controller.enqueue(encoder.encode(newText));
+                                break;
+                            }
+
+                            const closeIndex = buffer.indexOf('</Answer>') + 8;
+                            if(closeIndex !== -1){
+                                isStreaming = false;
+                            }
+                            controller.enqueue(encoder.encode(text));
+                            
+                        }
                     }
                 }
             }

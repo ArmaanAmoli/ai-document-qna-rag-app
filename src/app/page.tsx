@@ -1,41 +1,56 @@
 "use client";
-import { MessageBox, MessageBoxBot } from "@/components/ChatMessageBox";
-import { Message } from "@/types/componentProps.types";
-import { Prompt } from "@/components/promptBox";
-import { JSX, useState } from "react";
 
-export default function Chat() {
+import { useState } from "react";
+import { GoogleOAuthProvider, GoogleLogin} from "@react-oauth/google";
 
-  const [messagesArray, setMessagesArray] = useState<Message[]>([])
+type EnterMode = 'login' | 'signup';
 
-  const [prompt, setPrompt] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+export default function LandingPage() {
 
-  return (
-    <div className="flex flex-row h-screen gap-3 items-center justify-center bg-zinc-50 font-sans justify-start dark:bg-black p-4 ">
+    const [mode, setMode] = useState<EnterMode>('login');
+    return (
+        <>
+            <GoogleOAuthProvider clientId={process.env.NEXT_GOOGLE_CLIENT_ID!}>
+                <div className="h-screen w-screen overflow-hidden flex p-8 items-center justify-center gap-24 font-mono">
+                    <h1 className="text-5xl font-mono animate-typewriter">Welcome to Recall.ai</h1>
+                    <div className="flex flex-col border border-white/20 h-[460px] w-[400px] rounded-xl px-4 py-8 gap-4 justify-center">
 
-      <div className="flex flex-col flex-1 max-w-xs border border-white/15 h-full py-8 px-8 rounded-3xl min-w-[300px]">Chat History</div>
+                        <div className="flex h-[40px] w-full gap-1 overflow-hidden rounded-md">
+                            <button className={`flex flex-1 border border-white/20 justify-center items-center rounded-md
+                            ${mode === 'login' ? 'bg-white/90 text-black' : 'bg-white/20 text-white'} hover:bg-white hover:text-black transition-color ease-in-out duration-300
+                            text-lg`} onClick={() => { setMode('login') }}>Login</button>
 
-      <main className="relative flex flex-1 w-full h-full flex-col items-center 
-      justify-between py-4 px-24 bg-white dark:bg-black sm:items-start border 
-      rounded-3xl border-white/15 min-w-[800px] overflow-y-scroll">
+                            <button className={`flex flex-1 border border-white/20 justify-center items-center rounded-md
+                            ${mode === 'signup' ? 'bg-white/90 text-black' : 'bg-white/20 text-white'} hover:bg-white hover:text-black transition-color ease-in-out duration-300
+                            text-lg`} onClick={() => { setMode('signup') }}>Signup</button>
+                        </div>
 
-        <div className="w-full flex flex-col gap-4">
-          {/* {<MessageBox message={"hi their"} />
-          <MessageBoxBot message={"This **will** be parsed as Markdown."} />} */
-            messagesArray.map((value, index) => {
-              return (
-                <div className="w-full flex flex-col gap-4" key={index}>
-                  {value.role === 'user' && <MessageBox message={value.content} key={index} />}
-                  {value.role === 'agent' && <MessageBoxBot message={value.content} key={index} />}
-                </div>)
-            })
-          }
-        </div>
+                        {mode === 'login' && <div className="flex flex-col w-full py-4 gap-4">
+                            <input type="text" placeholder="Email"
+                                className="flex w-full rounded-xl border border-white/20 h-[40px] px-4 focus:outline-none resize-none"></input>
+                            <input type="password" placeholder="Password"
+                                className="flex w-full rounded-xl border border-white/20 h-[40px] px-4 focus:outline-none resize-none"></input>
+                        </div>}
 
-        <Prompt prompt={prompt} setPrompt={setPrompt} file={file} setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray} />
+                        {mode === 'signup' && <div className="flex flex-col w-full py-4 gap-4">
+                            <input type="text" placeholder="Email"
+                                className="flex w-full rounded-xl border border-white/20 h-[40px] px-4 focus:outline-none resize-none"></input>
+                            <input type="password" placeholder="Password"
+                                className="flex w-full rounded-xl border border-white/20 h-[40px] px-4 focus:outline-none resize-none"></input>
+                            <input type="password" placeholder="Confirm password"
+                                className="flex w-full rounded-xl border border-white/20 h-[40px] px-4 focus:outline-none resize-none"></input>
+                        </div>}
 
-      </main>
-    </div>
-  );
+                        <h1 className="w-full border-b border-white/20 flex justify-center">or</h1>
+
+                        <div>
+                            <GoogleLogin onSuccess={credentialResponse=>{console.log(credentialResponse)}} theme="filled_black"
+                                 shape="pill"></GoogleLogin>
+                        </div>
+
+                    </div>
+                </div>
+            </GoogleOAuthProvider>
+
+        </>)
 }

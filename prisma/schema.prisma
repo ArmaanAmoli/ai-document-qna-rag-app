@@ -12,14 +12,25 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id             String     @id @default(cuid())
+  name           String
+  email          String
+  joinedAt       DateTime   @default(now())
+  profilePicture Bytes
+  documents      Document[]
+}
+
 model Document {
   id             String          @id @default(cuid())
+  userId         String
   name           String
   type           String
   size           Float           @db.Real
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  documentChunks DocumentChunk[] 
+  documentChunks DocumentChunk[]
+  user           User            @relation(fields: [userId], references: [id])
 }
 
 model DocumentChunk {

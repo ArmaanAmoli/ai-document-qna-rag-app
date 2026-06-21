@@ -10,7 +10,6 @@ export default function LandingPage() {
     const [mode, setMode] = useState<EnterMode>('login');
     return (
         <>
-            <GoogleOAuthProvider clientId={process.env.NEXT_GOOGLE_CLIENT_ID!}>
                 <div className="h-screen w-screen overflow-hidden flex p-8 items-center justify-center gap-24 font-mono">
                     <h1 className="text-5xl font-mono animate-typewriter">Welcome to Recall.ai</h1>
                     <div className="flex flex-col border border-white/20 h-[460px] w-[400px] rounded-xl px-4 py-8 gap-4 justify-center">
@@ -50,7 +49,6 @@ export default function LandingPage() {
 
                     </div>
                 </div>
-            </GoogleOAuthProvider>
 
         </>)
 }

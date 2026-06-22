@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
+import { verifyToken , generateToken } from "@/lib/auth_utils/jwtTokenUtil";
 
 const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
@@ -24,14 +25,16 @@ export async function POST(request:Request){
             return NextResponse.json({error:'Invalid token payload'} , {status:401});
         }
 
-        if(!payload.email_verified){
+        if(!payload.email_verified){ // checking if google verified the email before login.
             return NextResponse.json({error:'Email not verified'} , {status:401});
         }
 
-        const userId = payload.sub;
+        const userId = payload.sub; //21 digit google account id
         const eamil = payload.email;
         const name = payload.name;
         const picture = payload.picture;
+
+        const Name:string[] = name!.split(' ');
 
         /* Now save these credential to database as new user or if exist let the user login */
 

@@ -17,7 +17,8 @@ model User {
   name           String
   email          String
   joinedAt       DateTime   @default(now())
-  profilePicture Bytes
+  profilePicture Bytes?
+  password       String?
   documents      Document[]
 }
 

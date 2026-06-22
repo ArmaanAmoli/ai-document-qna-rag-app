@@ -1,5 +1,5 @@
 import { describe , it , expect} from 'vitest';
-import { chunkText } from '../chunk-text';
+import { chunkText } from '../text_utils/chunk-text';
 
 describe('chunkText' , ()=>{
     it('splits text into chunks of max specified length' , ()=>{

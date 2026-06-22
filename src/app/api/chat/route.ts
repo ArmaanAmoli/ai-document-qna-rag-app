@@ -1,5 +1,5 @@
 import { searchContent } from "@/lib/db/queries/searchContent";
-import { generateEmbedding } from "@/lib/embedding";
+import { generateEmbedding } from "@/lib/text_utils/embedding";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 export async function POST(request : Request) {

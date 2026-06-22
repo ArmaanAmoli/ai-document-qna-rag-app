@@ -1,5 +1,5 @@
-import { chunkText } from "./chunk-text";
-import { generateEmbedding } from "./embedding";
+import { chunkText } from "./text_utils/chunk-text";
+import { generateEmbedding } from "./text_utils/embedding";
 import { prisma } from './db/prisma'
 import { createId } from "@paralleldrive/cuid2";
 import { Chunk, ChunkAndEmbedding, DocumentChunkTS, DocumentTS } from "@/types";

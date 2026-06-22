@@ -44,7 +44,7 @@ export default function LandingPage() {
 
                         <div>
                             <GoogleLogin onSuccess={credentialResponse=>{console.log(credentialResponse)}} theme="filled_black"
-                                 shape="pill"></GoogleLogin>
+                                 shape="pill" ux_mode="redirect"></GoogleLogin>
                         </div>
 
                     </div>

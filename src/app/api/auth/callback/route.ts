@@ -4,10 +4,14 @@ import { generateToken } from "@/lib/auth_utils/jwtTokenUtil";
 import { User } from "@/types/user.types";
 import { searchUser } from "@/lib/db/queries/user_queries/checkIfUserExist";
 import { createNewUser } from "@/lib/db/queries/user_queries/createNewUser";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 export async function POST(request:Request){
+    const cookieStore = await cookies();
+
     try{
         const formData = await request.formData();
         const credential = formData.get('credential') as string; // this is the Google JWT token
@@ -59,11 +63,17 @@ export async function POST(request:Request){
         //just return the jwt token
         const token = generateToken(user);
 
-        return NextResponse.json({authSuccess:true , token} , {status:200});
-        
+        //lets set the cookies.
 
+        cookieStore.set('session' , token , {httpOnly:true});
+
+
+        // return NextResponse.json({authSuccess:true , token} , {status:200});
+        
     }
     catch(error){
-        return NextResponse.json({authSuccess:false , error:'Authentication failed'} , {status:500});
+        return NextResponse.json({authSuccess:false , error:error} , {status:500});
     }
+    redirect('/chat');
+
 }

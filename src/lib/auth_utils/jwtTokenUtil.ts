@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken'
     const secretKey:string = process.env.JWT_SECRET!;
 
-export function generateToken(payload:Record<string,unknown>):string{
+export function generateToken(payload:any):string{
     const token = jwt.sign(payload , secretKey , {expiresIn:'30d'} )
     return token;
 }

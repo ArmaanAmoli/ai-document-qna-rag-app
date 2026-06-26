@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Dispatch , SetStateAction } from "react";
+import React, { useState, Dispatch , SetStateAction } from "react";
 
 export interface MessagePropInterface{
     prompt:string;
@@ -9,6 +9,10 @@ export interface MessagePropInterface{
     setFile: Dispatch<SetStateAction<File|null>>;
     messagesArray:Message[],
     setMessagesArray:Dispatch<SetStateAction<Message[]>>;
+}
+
+export interface ChatWindowComponentInterface extends MessagePropInterface{
+    children: React.ReactNode;
 }
 
 export interface UploadedFile{

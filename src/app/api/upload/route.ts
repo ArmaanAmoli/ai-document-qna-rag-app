@@ -1,10 +1,10 @@
 import { writeFile , mkdir } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { join, extname, basename } from "path";
-import { extractText } from "@/lib/extract-text";
+import { extractText } from "@/lib/text_utils/extract-text";
 import { PDFData } from "@/types";
 import { createId } from "@paralleldrive/cuid2";
-import { insertDocInDatabase } from "@/lib/insert-doc-in-database";
+import { insertDocInDatabase } from "@/lib/text_utils/insert-doc-in-database";
 
 export async function POST(req: NextRequest) {
     try {
@@ -59,3 +59,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false , error: 'Server error saving file' }, { status: 500 });
     }
 }
+
+//after running upload doc we want to redirect the use to a new chat path with chat id

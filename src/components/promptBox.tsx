@@ -67,7 +67,7 @@ export function Prompt(props: MessagePropInterface) {
         }
     }
     return (
-        <div className="absolute sticky bottom-0 -translate-x-1/2 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
+        <div className="z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
         left-1/2 w-[600px] min-h-[54px] max-h-[100px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5
         bg-black/40 backdrop-blur-md">
 
@@ -99,7 +99,7 @@ export function Prompt(props: MessagePropInterface) {
                 onClick={() => fileInputRef.current != null ? fileInputRef.current.click() : null}
             >
                 <img
-                    src="./icons/upload.svg"
+                    src="/icons/upload.svg"
                     className="w-6/12 h-6/12 object-contain -translate-x-[0.4px] -translate-y-[.5px]"
                     alt="Send"
                 />
@@ -111,7 +111,7 @@ export function Prompt(props: MessagePropInterface) {
                 }}
                 className="h-10 w-10 border border-white/20 rounded-full flex justify-center items-center overflow-hidden hover:bg-white/20 hover:transition">
                 <img
-                    src="./icons/send.svg"
+                    src="/icons/send.svg"
                     className="w-6/12 h-6/12 object-contain -translate-x-[1px] translate-y-[1px]"
                     alt="Send"
                 />

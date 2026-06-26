@@ -13,25 +13,25 @@ datasource db {
 }
 
 model User {
-  id             String     @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
   email          String
-  joinedAt       DateTime   @default(now())
+  joinedAt       DateTime @default(now())
   profilePicture Bytes?
   password       String?
-  documents      Document[]
+  chat           Chat[]
 }
 
 model Document {
   id             String          @id @default(cuid())
-  userId         String
+  chatId         String
   name           String
   type           String
   size           Float           @db.Real
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   documentChunks DocumentChunk[]
-  user           User            @relation(fields: [userId], references: [id])
+  chat           Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }
 
 model DocumentChunk {
@@ -42,4 +42,20 @@ model DocumentChunk {
   chunkIndex Int
   createdAt  DateTime                   @default(now())
   document   Document                   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id        String     @id @default(cuid())
+  userId    String
+  documents Document[]
+  messages  Message[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id      String @id @default(cuid())
+  content String
+  index   Int
+  chatId  String
+  chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }

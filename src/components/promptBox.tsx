@@ -46,6 +46,10 @@ export function Prompt(props: MessagePropInterface) {
                 method: 'POST',
                 body: data,
             })
+            if(response.redirected){
+                window.location.href = response.url; 
+                return;
+            }
             const res = await response.json();
             if ("success" in res) {
                 if (res.success == true && "documentId" in res) {

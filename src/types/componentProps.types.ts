@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Dispatch , SetStateAction } from "react";
+import React, { Dispatch , SetStateAction } from "react";
 
 export interface MessagePropInterface{
     prompt:string;

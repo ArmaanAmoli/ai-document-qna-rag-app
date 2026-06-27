@@ -3,7 +3,7 @@ import { prisma } from '../prisma'
 import { Prisma } from '@/generated/prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 
-export async function insertDocument(document: DocumentTS, chunkAndEmbedding: ChunkAndEmbedding[]) {
+export async function insertDocument(document: DocumentTS, chunkAndEmbedding: ChunkAndEmbedding[] , chatId: string) {
     return await prisma.$transaction(async (tx) => { // tx->transaction client
         const docRow = Prisma.sql`(
             ${document.id},
@@ -11,7 +11,8 @@ export async function insertDocument(document: DocumentTS, chunkAndEmbedding: Ch
             ${document.type},
             ${document.size},
             NOW(),
-            NOW()
+            NOW(),
+            ${chatId}
         )`;
 
         const sqlRows = chunkAndEmbedding.map((ce) => {

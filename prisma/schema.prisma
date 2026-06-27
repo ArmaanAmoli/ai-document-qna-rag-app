@@ -57,5 +57,6 @@ model Message {
   content String
   index   Int
   chatId  String
+  isHuman Boolean
   chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }

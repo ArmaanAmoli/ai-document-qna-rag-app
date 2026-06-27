@@ -41,7 +41,8 @@ export function Prompt(props: MessagePropInterface) {
         if (props.file != null) {
 
             const data = new FormData();
-            data.append('file', props.file)
+            data.append('file', props.file);
+            if (props.messagesArray.length === 0){data.append('message' , props.prompt)};
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: data,

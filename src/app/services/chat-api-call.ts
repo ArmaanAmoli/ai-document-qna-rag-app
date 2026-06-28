@@ -1,3 +1,4 @@
+
 export async function sendChatMessage(documentId: string, question: string) {
     const body = {
         documentId: documentId,
@@ -10,4 +11,16 @@ export async function sendChatMessage(documentId: string, question: string) {
     // const chatRes = await chatResponse.json();
 
     return chatResponse;
+}
+
+export async function fetchChatHistory(chatId:string){
+    const body = {
+        chatId: chatId
+    };
+
+    const res = await fetch('/api/chat/history' , {
+        method: 'GET',
+        body: JSON.stringify(body),
+    });
+    return res.json();
 }

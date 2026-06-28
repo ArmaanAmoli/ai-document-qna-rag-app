@@ -7,8 +7,8 @@ export interface MessagePropInterface{
     setPrompt: Dispatch<SetStateAction<string>>;
     file:File|null;
     setFile: Dispatch<SetStateAction<File|null>>;
-    messagesArray:Message[],
-    setMessagesArray:Dispatch<SetStateAction<Message[]>>;
+    messagesArray:MessageUI[],
+    setMessagesArray:Dispatch<SetStateAction<MessageUI[]>>;
 }
 
 export interface ChatWindowComponentInterface extends MessagePropInterface{
@@ -34,4 +34,4 @@ interface UserMessage{
     role:'user';
 }
 
-export type Message = AgentMessage | UserMessage; // Discriminated Union
+export type MessageUI = AgentMessage | UserMessage; // Discriminated Union

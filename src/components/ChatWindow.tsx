@@ -1,6 +1,6 @@
 import { Prompt } from "./promptBox"
 import React, {useState } from "react";
-import { Message , ChatWindowComponentInterface } from "@/types/componentProps.types";
+import { MessageUI , ChatWindowComponentInterface } from "@/types/componentProps.types";
 
 
 export default function ChatWindow(chats:ChatWindowComponentInterface) {

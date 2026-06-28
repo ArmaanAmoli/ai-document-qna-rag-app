@@ -1,5 +1,5 @@
 "use client";
-import { MessagePropInterface , Message} from "@/types/componentProps.types";
+import { MessagePropInterface , MessageUI} from "@/types/componentProps.types";
 import { useState, useRef } from "react"
 import { sendChatMessage } from "@/app/services/chat-api-call";
 
@@ -15,7 +15,7 @@ export function Prompt(props: MessagePropInterface) {
         let accumulated = '';
 
         const agentId:number = Date.now()
-        const newMessageAgent:Message = {role:'agent' , id:agentId , content:""};
+        const newMessageAgent:MessageUI = {role:'agent' , id:agentId , content:""};
         props.setMessagesArray(prev=>[...prev , newMessageAgent]);
         setIsStreaming(true);
         console.log("Reader Started")

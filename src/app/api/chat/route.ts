@@ -1,14 +1,31 @@
 import { searchContent } from "@/lib/db/queries/searchContent";
 import { generateEmbedding } from "@/lib/text_utils/embedding";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { createId } from "@paralleldrive/cuid2";
+import { createNewMessage } from "@/lib/db/queries/message_queries/create_message";
+import { Message } from "@/types/chat.types";
 
 export async function POST(request : Request) {
+    
     const body = await request.json();
     console.log(body);
 
-    const {documentId , question} = body;
+    const {documentId , question , chatId , idx} = body;
 
     console.log(question);
+
+    const messageId:string = createId();
+
+    // storing the message to db
+    const message:Message = {
+        id: messageId,
+        content: question,
+        chatId:chatId,
+        index:idx,
+        isHuman: true
+    };
+
+    await createNewMessage(message);
 
     // start with enbedding the quetion
     const questionArr:string[] = [question];
@@ -96,6 +113,18 @@ Do not include any text after the closing </Answer> tag.`
                                 isStreaming = false;
                                 const newText = text.substring(0 , text.indexOf('<'));
                                 controller.enqueue(encoder.encode(newText));
+                                buffer = buffer.substring(0 , buffer.lastIndexOf('<'))
+
+                                //storing this response to db;
+                                const messageAgent:Message = {
+                                    id : createId(),
+                                    content: buffer,
+                                    isHuman: false,
+                                    index:idx+1,
+                                    chatId:chatId
+                                }
+
+                                await createNewMessage(messageAgent);
                                 break;
                             }
 
@@ -125,6 +154,7 @@ Do not include any text after the closing </Answer> tag.`
             'Content-Type': 'text/plain; charset=utf-8',
             'Cache-Control': 'no-cache, no-transform',
         },
+        
     });
 
 }

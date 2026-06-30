@@ -7,6 +7,7 @@ export async function generateEmbedding(texts: string[]): Promise<number[][]> {
         body:JSON.stringify({texts}),
     })
     const data = await response.json();
+    console.log("Embedder")
     return data.embeddings;
 }
 

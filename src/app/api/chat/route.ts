@@ -10,7 +10,7 @@ export async function POST(request : Request) {
     const body = await request.json();
     console.log(body);
 
-    const {documentId , question , chatId , idx} = body;
+    const { question , chatId , idx} = body;
 
     console.log(question);
 
@@ -25,6 +25,14 @@ export async function POST(request : Request) {
         isHuman: true
     };
 
+    const messageAgent:Message = {
+        id: createId(),
+        content:"",
+        chatId:chatId,
+        index:idx+1,
+        isHuman:false
+    }
+
     await createNewMessage(message);
 
     // start with enbedding the quetion
@@ -34,7 +42,7 @@ export async function POST(request : Request) {
     
     // Do a vector search over the vector db
     const embeddedQuestionE = embeddedQuestion[0];
-    const contextString: string = await searchContent(documentId, embeddedQuestionE);
+    const contextString: string = await searchContent(embeddedQuestionE);
 
     //creating LLM prompt
 
@@ -116,13 +124,7 @@ Do not include any text after the closing </Answer> tag.`
                                 buffer = buffer.substring(0 , buffer.lastIndexOf('<'))
 
                                 //storing this response to db;
-                                const messageAgent:Message = {
-                                    id : createId(),
-                                    content: buffer,
-                                    isHuman: false,
-                                    index:idx+1,
-                                    chatId:chatId
-                                }
+                                messageAgent.content = buffer;
 
                                 await createNewMessage(messageAgent);
                                 break;
@@ -153,6 +155,8 @@ Do not include any text after the closing </Answer> tag.`
         headers: {
             'Content-Type': 'text/plain; charset=utf-8',
             'Cache-Control': 'no-cache, no-transform',
+            'X-message-object': JSON.stringify(message),
+            'X-agent-message-object': JSON.stringify(messageAgent),
         },
         
     });

@@ -1,8 +1,8 @@
 "use client";
-import { MessagePropInterface , MessageUI} from "@/types/componentProps.types";
+import { MessagePropInterface} from "@/types/componentProps.types";
 import { useState, useRef } from "react"
 import { sendChatMessage } from "@/app/services/chat-api-call";
-
+import { Message } from "@/types/chat.types";
 export function Prompt(props: MessagePropInterface) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const setMessagesArray = props.setMessagesArray;
@@ -14,11 +14,14 @@ export function Prompt(props: MessagePropInterface) {
         const decoder = new TextDecoder();
         let accumulated = '';
 
-        const agentId:number = Date.now()
-        const newMessageAgent:MessageUI = {role:'agent' , id:agentId , content:""};
-        props.setMessagesArray(prev=>[...prev , newMessageAgent]);
+        // const agentId:number = Date.now()
+        const newMessageAgent:Message = JSON.parse(reply.headers.get('X-agent-message-object')!);
+        const newMessageUser:Message = JSON.parse(reply.headers.get('X-message-object')!);
+
+        props.setMessagesArray(prev=>[...prev , newMessageUser, newMessageAgent]);
         setIsStreaming(true);
         console.log("Reader Started")
+
         while(true){
             const {done , value} = await reader.read();
             if(done)break;
@@ -26,7 +29,7 @@ export function Prompt(props: MessagePropInterface) {
 
             //updating only the streaming message
             setMessagesArray(prev=>prev.map(msg=>
-                msg.id===agentId?{...msg , content:accumulated}:msg
+                msg.id===newMessageAgent.id ? {...msg , content:accumulated}:msg
             ));
         }
         console.log("Reader Ended")
@@ -36,7 +39,7 @@ export function Prompt(props: MessagePropInterface) {
 
     const sendPrompt = async () => {
         //adding user prompt to the message array
-        setMessagesArray(prev => [...prev , {role:'user' , content:props.prompt}])
+        // setMessagesArray(prev => [...prev , {role:'user' , content:props.prompt}])
 
         if (props.file != null) {
 
@@ -57,7 +60,7 @@ export function Prompt(props: MessagePropInterface) {
                     const documentId = res.documentId;
                     localStorage.setItem('documentId', documentId);
                     const question = props.prompt;
-                    const reply = await sendChatMessage(documentId, question);
+                    const reply = await sendChatMessage(documentId, question , props.chatId , props.messagesArray.length+1);
                     await displayStreamingReply(reply);
                 }
             }
@@ -67,7 +70,7 @@ export function Prompt(props: MessagePropInterface) {
             //fetching doc id from local storage
             const documentId = localStorage.getItem("documentId")
             const question = props.prompt;
-            const reply = await sendChatMessage(documentId! , question);
+            const reply = await sendChatMessage(documentId! , question , props.chatId , props.messagesArray.length+1);
             await displayStreamingReply(reply);
         }
     }

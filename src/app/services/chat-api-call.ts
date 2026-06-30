@@ -1,5 +1,5 @@
 
-export async function sendChatMessage(documentId: string, question: string) {
+export async function sendChatMessage(documentId: string, question: string , chatId: string , idx:number) {
     const body = {
         documentId: documentId,
         question: question

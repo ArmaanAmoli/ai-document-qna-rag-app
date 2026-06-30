@@ -1,16 +1,16 @@
 "use client";
 import ChatWindow from "@/components/ChatWindow";
-import { MessageUI } from "@/types/componentProps.types";
+import { Message } from "@/types/chat.types";
 import { useState } from "react";
 
 export default function ChatDefaut() {
-    const [messagesArray, setMessagesArray] = useState<MessageUI[]>([])
+    const [messagesArray, setMessagesArray] = useState<Message[]>([])
 
     const [prompt, setPrompt] = useState("");
     const [file, setFile] = useState<File | null>(null);
 
     return (
-        <ChatWindow prompt={prompt} setPrompt={setPrompt} file={file} setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray}>
+        <ChatWindow prompt={prompt} setPrompt={setPrompt} file={file} setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray} chatId="">
             <></>
         </ChatWindow>
     );

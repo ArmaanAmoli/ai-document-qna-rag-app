@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
 
         await unlink(filePath); // delete the file after extracting text
 
+
         try {
             const chatId = clientUrlPath.split('/').at(-1);
 
@@ -70,8 +71,8 @@ export async function POST(req: NextRequest) {
                 //this is a new chat and we need to redirect
                 const cid:string = crypto.randomUUID();
                 // create a new chat in db and then upload doc with the chat id;
-                createNewChat(chatId , userInfo.id); // 1
-
+                await createNewChat(cid, userInfo.id); // 1
+                await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize , cid)
                 // if the user also have a message with the upload then we will add it to db so later after redirect we can access at load.
                 if(formData.get("message")){
                     const messageContent = formData.get("message");
@@ -83,7 +84,10 @@ export async function POST(req: NextRequest) {
                 
                 return NextResponse.redirect(new URL(`/chat/${cid}` , new URL(req.url)) , 303) // change status code from 307 to 303 to swithch req form post to get
             }
-            console.log(chatId)
+            else{
+                await insertDocInDatabase(extractedText , fileBaseName , fileExtension , filesize , chatId!);
+                console.log(chatId)
+            }
             // const docId = await insertDocInDatabase(extractedText, fileBaseName, fileExtension, filesize)
             // return NextResponse.json({ success: true, message: `File saved successfully received`, documentId: docId });
         }

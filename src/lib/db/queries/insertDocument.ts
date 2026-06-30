@@ -29,7 +29,7 @@ export async function insertDocument(document: DocumentTS, chunkAndEmbedding: Ch
         });
 
         await tx.$executeRaw`
-        INSERT INTO "Document" ("id" , "name" , "type" , "size" , "createdAt" , "updatedAt") 
+        INSERT INTO "Document" ("id" , "name" , "type" , "size" , "createdAt" , "updatedAt" , "chatId") 
         VALUES ${docRow}`
 
         await tx.$executeRaw`

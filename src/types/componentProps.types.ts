@@ -1,5 +1,6 @@
 "use client";
 
+import { Message } from "./chat.types";
 import React, { Dispatch , SetStateAction } from "react";
 
 export interface MessagePropInterface{
@@ -7,8 +8,9 @@ export interface MessagePropInterface{
     setPrompt: Dispatch<SetStateAction<string>>;
     file:File|null;
     setFile: Dispatch<SetStateAction<File|null>>;
-    messagesArray:MessageUI[],
-    setMessagesArray:Dispatch<SetStateAction<MessageUI[]>>;
+    messagesArray:Message[];
+    setMessagesArray:Dispatch<SetStateAction<Message[]>>;
+    chatId:string;
 }
 
 export interface ChatWindowComponentInterface extends MessagePropInterface{
@@ -22,16 +24,16 @@ export interface UploadedFile{
     type:string;
 }
 
-interface AgentMessage{
-    content:string;
-    id:number; // only important for agent
-    role:'agent';
-}
+// interface AgentMessage{
+//     content:string;
+//     id:number; // only important for agent
+//     role:'agent';
+// }
 
-interface UserMessage{
-    content:string;
-    id?:never;
-    role:'user';
-}
+// interface UserMessage{
+//     content:string;
+//     id?:never;
+//     role:'user';
+// }
 
-export type MessageUI = AgentMessage | UserMessage; // Discriminated Union
+// export type MessageUI = AgentMessage | UserMessage; // Discriminated Union

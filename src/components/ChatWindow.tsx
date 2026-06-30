@@ -1,6 +1,6 @@
 import { Prompt } from "./promptBox"
 import React, {useState } from "react";
-import { MessageUI , ChatWindowComponentInterface } from "@/types/componentProps.types";
+import { ChatWindowComponentInterface } from "@/types/componentProps.types";
 
 
 export default function ChatWindow(chats:ChatWindowComponentInterface) {
@@ -21,7 +21,8 @@ export default function ChatWindow(chats:ChatWindowComponentInterface) {
                         file={chats.file} 
                         setFile={chats.setFile} 
                         messagesArray={chats.messagesArray} 
-                        setMessagesArray={chats.setMessagesArray} />
+                        setMessagesArray={chats.setMessagesArray}
+                        chatId={chats.chatId}/>
                     </div>
 
                 </main>

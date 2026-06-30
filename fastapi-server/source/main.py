@@ -23,6 +23,6 @@ def embed(req:EmbedRequest):
     return {"embeddings": embeddings.tolist()}
     
 if __name__ == '__main__':
-    print(f"Server started: http:/localhost:8001")
-    uvicorn.run("main:app", host="127.0.0.1" , port=8001 , reload=True)
+    print(f"Server started: http://localhost:8001")
+    uvicorn.run("main:app", host="localhost" , port=8001 , reload=True)
     

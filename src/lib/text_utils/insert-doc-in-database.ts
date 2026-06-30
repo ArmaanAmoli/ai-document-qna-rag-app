@@ -1,12 +1,12 @@
-import { chunkText } from "./text_utils/chunk-text";
-import { generateEmbedding } from "./text_utils/embedding";
-import { prisma } from './db/prisma'
+import { chunkText } from "./chunk-text";
+import { generateEmbedding } from "./embedding";
+import { prisma } from "../db/prisma";
 import { createId } from "@paralleldrive/cuid2";
 import { Chunk, ChunkAndEmbedding, DocumentChunkTS, DocumentTS } from "@/types";
-import { insertDocument } from "./db/queries/insertDocument";
+import { insertDocument } from "../db/queries/insertDocument";
 
 export async function insertDocInDatabase(text: string, filename: string, filetype: string,
-    filesize: number): Promise<string> {
+    filesize: number , chatId:string): Promise<string> {
 
     console.log("Insertion in to db started");
 
@@ -52,10 +52,10 @@ export async function insertDocInDatabase(text: string, filename: string, filety
         size: filesize,
     }
     try {
-        await insertDocument(document, AllChunksAndEmbedding);
+        await insertDocument(document, AllChunksAndEmbedding , chatId);
     }
     catch (error) {
-        throw new Error(`Document insertion failed in database ${error}`)
+        throw error
     }
     return documentID;
 }

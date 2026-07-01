@@ -18,9 +18,8 @@ export async function fetchChatHistory(chatId:string){
         chatId: chatId
     };
 
-    const res = await fetch('/api/chat/history' , {
+    const res = await fetch(`/api/chat/history/${chatId}` , {
         method: 'GET',
-        body: JSON.stringify(body),
     });
     return res.json();
 }

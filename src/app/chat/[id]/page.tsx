@@ -10,10 +10,12 @@ export default function Chat({ params, }: { params: Promise<{ id: string }> }) {
   const agentIsResponding = useRef<boolean>(false);
 
   console.log(chatId);
-  const [messagesArray, setMessagesArray] = useState<Message[]>([])
+  const [messagesArray, setMessagesArray] = useState<Message[]>([]);
 
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
+
+  console.log("Message Array",messagesArray)
 
   /**
      USE EFFECT TO FETCH CHAT MESSAGES FROM DB.
@@ -21,7 +23,7 @@ export default function Chat({ params, }: { params: Promise<{ id: string }> }) {
   useEffect(() => {
     // const fetchChatFromDb()
     const getChatHistory = async(chatId:string)=>{
-      const chatHistory = await fetchChatHistory(chatId);
+      const chatHistory = (await fetchChatHistory(chatId)).messages!;
       setMessagesArray(chatHistory);
     }
     getChatHistory(chatId);
@@ -30,7 +32,7 @@ export default function Chat({ params, }: { params: Promise<{ id: string }> }) {
   return (
     <ChatWindow prompt={prompt} setPrompt={setPrompt} file={file} setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray} chatId={chatId}>
       <div className="w-full flex flex-col gap-4">
-        {
+        {messagesArray &&
           messagesArray.map((value, index) => {
             return (
               <div className="w-full flex flex-col gap-4" key={index}>

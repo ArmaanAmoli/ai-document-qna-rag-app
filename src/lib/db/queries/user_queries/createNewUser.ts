@@ -18,7 +18,7 @@ export async function createNewUser(user: User) {
             ${passwordHash})
         `;
 
-        await tx.$executeRaw`
+        return tx.$executeRaw`
         INSERT INTO "User" VALUES ${userRow}
         `
     });

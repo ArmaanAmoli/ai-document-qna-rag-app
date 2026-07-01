@@ -6,7 +6,7 @@ import { ChatWindowComponentInterface } from "@/types/componentProps.types";
 export default function ChatWindow(chats:ChatWindowComponentInterface) {
     return (
         <>
-            <div className="flex h-screen gap-3 items-center justify-center bg-zinc-50 font-sans justify-start dark:bg-black p-4 ">
+            <div className="flex h-screen gap-3 items-center justify-center bg-zinc-50 font-sans justify-start dark:bg-black p-4  min-h-[600px]">
 
                 <div className="flex flex-col max-w-xs border border-white/15 h-full py-8 px-8 rounded-3xl min-w-[300px]">Chat History</div>
 

@@ -7,8 +7,7 @@ export async function createNewMessage(message:Message){
     const newMessage = Prisma.sql`(${id} , ${content} , ${index} , ${chatId} , ${isHuman})`;
     return(
         prisma.$transaction(async(tx)=>{
-            tx.$executeRaw`
-            INSERT INTO "Message" VALUES`
+            return tx.$executeRaw`INSERT INTO "Message" VALUES`
         })
     )
 }

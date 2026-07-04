@@ -1,16 +1,18 @@
 "use client";
 import ChatWindow from "@/components/ChatWindow";
 import { Message } from "@/types/chat.types";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export default function ChatDefaut() {
     const [messagesArray, setMessagesArray] = useState<Message[]>([])
-
+    const isStreaming = useRef(false);
     const [prompt, setPrompt] = useState("");
     const [file, setFile] = useState<File | null>(null);
 
     return (
-        <ChatWindow prompt={prompt} setPrompt={setPrompt} file={file} setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray} chatId="">
+        <ChatWindow prompt={prompt} setPrompt={setPrompt} file={file} 
+        setFile={setFile} messagesArray={messagesArray} setMessagesArray={setMessagesArray} 
+        chatId="" isStreaming={isStreaming}>
             <></>
         </ChatWindow>
     );

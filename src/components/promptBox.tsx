@@ -1,79 +1,32 @@
 "use client";
-import { MessagePropInterface} from "@/types/componentProps.types";
-import { useState, useRef } from "react"
-import { sendChatMessage } from "@/app/services/chat-api-call";
+import { MessagePropInterface } from "@/types/componentProps.types";
+import { useState, useRef, useEffect } from "react"
 import { Message } from "@/types/chat.types";
+import { sendPrompt } from "@/app/services/sendPrompt";
+import { displayStreamingReply } from "@/app/services/displayStreamingReply";
+import { send } from "process";
+
+
 export function Prompt(props: MessagePropInterface) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const setMessagesArray = props.setMessagesArray;
-    const [isStreaming , setIsStreaming] = useState(false);
+    const messageArray = props.messagesArray;
+    const lastMessage: Message | undefined = messageArray.at(-1);
 
-    const displayStreamingReply = async (reply: Response) => {
-        console.log("message Streaming started");
-        const reader = reply.body!.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-
-        // const agentId:number = Date.now()
-        const newMessageAgent:Message = JSON.parse(reply.headers.get('X-agent-message-object')!);
-        const newMessageUser:Message = JSON.parse(reply.headers.get('X-message-object')!);
-
-        props.setMessagesArray(prev=>[...prev , newMessageUser, newMessageAgent]);
-        setIsStreaming(true);
-        console.log("Reader Started")
-
-        while(true){
-            const {done , value} = await reader.read();
-            if(done)break;
-            accumulated += decoder.decode(value);
-
-            //updating only the streaming message
-            setMessagesArray(prev=>prev.map(msg=>
-                msg.id===newMessageAgent.id ? {...msg , content:accumulated}:msg
-            ));
+    useEffect(() => {
+        /*
+          if the last message is by human than we will resend the message to llm
+        */
+        async function send() {
+            await sendPrompt(props, true);
         }
-        console.log("Reader Ended")
-        setIsStreaming(false);
-        console.log("message Streaming ended");
-    }
-
-    const sendPrompt = async () => {
-        //adding user prompt to the message array
-        // setMessagesArray(prev => [...prev , {role:'user' , content:props.prompt}])
-
-        if (props.file != null) {
-
-            const data = new FormData();
-            data.append('file', props.file);
-            if (props.messagesArray.length === 0){data.append('message' , props.prompt)};
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: data,
-            })
-            if(response.redirected){
-                window.location.href = response.url; 
-                return;
-            }
-            const res = await response.json();
-            if ("success" in res) {
-                if (res.success == true && "documentId" in res) {
-                    const documentId = res.documentId;
-                    localStorage.setItem('documentId', documentId);
-                    const question = props.prompt;
-                    const reply = await sendChatMessage(documentId, question , props.chatId , props.messagesArray.length+1);
-                    await displayStreamingReply(reply);
-                }
-            }
+        if (!props.isStreaming.current && lastMessage && lastMessage.isHuman) {
+            // resend the messag to llm with duplicate tag.
+            send()
         }
 
-        else {
-            //fetching doc id from local storage
-            const documentId = localStorage.getItem("documentId")
-            const question = props.prompt;
-            const reply = await sendChatMessage(documentId! , question , props.chatId , props.messagesArray.length+1);
-            await displayStreamingReply(reply);
-        }
-    }
+    }, [])
+
+
     return (
         <div className="z-10 shadow-[0_4px_30px_rgba(0,0,0,0.4),_inset_0_1px_1px_rgba(255,255,255,0.1)]
         left-1/2 w-[600px] min-h-[54px] max-h-[100px] border border-white/20 rounded-3xl px-4 py-4 flex items-center gap-1.5
@@ -115,7 +68,7 @@ export function Prompt(props: MessagePropInterface) {
 
             <button type="button"
                 onClick={() => {
-                    sendPrompt();
+                    sendPrompt(props, false);
                 }}
                 className="h-10 w-10 border border-white/20 rounded-full flex justify-center items-center overflow-hidden hover:bg-white/20 hover:transition">
                 <img

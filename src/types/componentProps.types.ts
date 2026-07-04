@@ -1,7 +1,7 @@
 "use client";
 
 import { Message } from "./chat.types";
-import React, { Dispatch , SetStateAction } from "react";
+import React, { Dispatch , SetStateAction , RefObject} from "react";
 
 export interface MessagePropInterface{
     prompt:string;
@@ -11,6 +11,7 @@ export interface MessagePropInterface{
     messagesArray:Message[];
     setMessagesArray:Dispatch<SetStateAction<Message[]>>;
     chatId:string;
+    isStreaming:RefObject<boolean>;
 }
 
 export interface ChatWindowComponentInterface extends MessagePropInterface{

@@ -5,41 +5,42 @@ import { createId } from "@paralleldrive/cuid2";
 import { createNewMessage } from "@/lib/db/queries/message_queries/create_message";
 import { Message } from "@/types/chat.types";
 
-export async function POST(request : Request) {
-    
+export async function POST(request: Request) {
+
     const body = await request.json();
     console.log(body);
 
-    const { question , chatId , idx} = body;
+    const { question, chatId, idx, isDuplicate } = body;
 
     console.log(question);
 
-    const messageId:string = createId();
+
+    var messageId: string = createId();
 
     // storing the message to db
-    const message:Message = {
+    let message: Message = {
         id: messageId,
         content: question,
-        chatId:chatId,
-        index:idx,
+        chatId: chatId,
+        index: idx,
         isHuman: true
     };
 
-    const messageAgent:Message = {
+    let messageAgent: Message = {
         id: createId(),
-        content:"",
-        chatId:chatId,
-        index:idx+1,
-        isHuman:false
+        content: "",
+        chatId: chatId,
+        index: idx + 1,
+        isHuman: false
     }
 
-    await createNewMessage(message);
+    if(!isDuplicate) {await createNewMessage(message);}
 
     // start with enbedding the quetion
-    const questionArr:string[] = [question];
-    
+    const questionArr: string[] = [question];
+
     const embeddedQuestion = await generateEmbedding(questionArr);
-    
+
     // Do a vector search over the vector db
     const embeddedQuestionE = embeddedQuestion[0];
     const contextString: string = await searchContent(embeddedQuestionE);
@@ -84,7 +85,7 @@ Do not include any text after the closing </Answer> tag.`
         contents: prompt,
         config: {
             systemInstruction: instruction,
-            
+
         }
     });
 
@@ -94,48 +95,49 @@ Do not include any text after the closing </Answer> tag.`
 
             try {
                 //we want to only extract the response inside <Answer> </Answer> tags
-                let buffer:string = '';
-                let isStreaming:boolean = false;
+                let buffer: string = '';
+                let isStreaming: boolean = false;
 
                 for await (const chunk of responseStream) {
                     let text = chunk.text;
                     if (text) {
                         buffer += text;
 
-                        if(!isStreaming ){
+                        if (!isStreaming) {
                             isStreaming = true;
 
                             const openingIdx = buffer.indexOf('<Answer>');
-                            if(openingIdx != -1){
+                            if (openingIdx != -1) {
                                 isStreaming = true;
-                                buffer = buffer.substring((openingIdx+('<Answer>'.length)));
+                                buffer = buffer.substring((openingIdx + ('<Answer>'.length)));
                                 console.log(buffer)
                                 controller.enqueue(encoder.encode(buffer));
                                 continue;
                             }
                         }
 
-                        if(isStreaming){
+                        if (isStreaming) {
                             const regex = /(<\/Answer>|<\/Answe|<\/Answ|<\/Ans|<\/An|<\/A|<\/)$/;
-                            if(regex.test(text)){
+                            if (regex.test(text)) {
                                 isStreaming = false;
-                                const newText = text.substring(0 , text.indexOf('<'));
+                                const newText = text.substring(0, text.indexOf('<'));
                                 controller.enqueue(encoder.encode(newText));
-                                buffer = buffer.substring(0 , buffer.lastIndexOf('<'))
+                                buffer = buffer.substring(0, buffer.lastIndexOf('<'))
 
                                 //storing this response to db;
                                 messageAgent.content = buffer;
-
+                                console.log("create new message ran for llm" , messageAgent);
                                 await createNewMessage(messageAgent);
+
                                 break;
                             }
 
                             const closeIndex = buffer.indexOf('</Answer>') + 8;
-                            if(closeIndex !== -1){
+                            if (closeIndex !== -1) {
                                 isStreaming = false;
                             }
                             controller.enqueue(encoder.encode(text));
-                            
+
                         }
                     }
                 }
@@ -150,15 +152,14 @@ Do not include any text after the closing </Answer> tag.`
             }
         }
     });
-
     return new Response(stream, {
         headers: {
             'Content-Type': 'text/plain; charset=utf-8',
             'Cache-Control': 'no-cache, no-transform',
-            'X-message-object': JSON.stringify(message),
-            'X-agent-message-object': JSON.stringify(messageAgent),
+            'X-message-object': JSON.stringify(message!),
+            'X-agent-message-object': JSON.stringify(messageAgent!),
         },
-        
+
     });
 
 }

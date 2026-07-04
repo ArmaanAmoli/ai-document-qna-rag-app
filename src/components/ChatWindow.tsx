@@ -22,7 +22,8 @@ export default function ChatWindow(chats:ChatWindowComponentInterface) {
                         setFile={chats.setFile} 
                         messagesArray={chats.messagesArray} 
                         setMessagesArray={chats.setMessagesArray}
-                        chatId={chats.chatId}/>
+                        chatId={chats.chatId}
+                        isStreaming = {chats.isStreaming}/>
                     </div>
 
                 </main>

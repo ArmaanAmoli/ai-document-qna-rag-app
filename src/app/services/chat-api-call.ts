@@ -1,9 +1,13 @@
 
-export async function sendChatMessage(documentId: string, question: string , chatId: string , idx:number) {
+export async function sendChatMessage(question: string , chatId: string , idx:number , isDuplicate:boolean) {
+    // question chatID , idx-> length of message array , isDuplicate , 
     const body = {
-        documentId: documentId,
-        question: question
+        question,
+        chatId,
+        idx,
+        isDuplicate,
     }
+
     const chatResponse = await fetch('/api/chat', {
         method: 'POST',
         body: JSON.stringify(body),

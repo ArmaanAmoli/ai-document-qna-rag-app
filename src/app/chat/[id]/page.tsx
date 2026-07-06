@@ -27,6 +27,8 @@ export default function Chat({ params, }: { params: Promise<{ id: string }> }) {
     console.log("USE EFFECT AT THE CHAT PAGE")
     async function send() {
       await sendPrompt(props, true);
+      props.prompt = "";
+
     }
     const getChatHistory = async (chatId: string) => {
       const chatHistory = (await fetchChatHistory(chatId)).messages!;
@@ -35,6 +37,7 @@ export default function Chat({ params, }: { params: Promise<{ id: string }> }) {
       const lastMessage = chatHistory.at(-1)
       if (!props.isStreaming.current && lastMessage && lastMessage.isHuman) {
         // resend the messag to llm with duplicate tag.
+        props.prompt = lastMessage.content;
         send()
       }
     }

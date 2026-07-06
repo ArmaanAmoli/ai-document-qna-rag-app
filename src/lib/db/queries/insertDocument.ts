@@ -4,6 +4,7 @@ import { Prisma } from '@/generated/prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 
 export async function insertDocument(document: DocumentTS, chunkAndEmbedding: ChunkAndEmbedding[] , chatId: string) {
+    console.log("document insertion begin");
     return await prisma.$transaction(async (tx) => { // tx->transaction client
         const docRow = Prisma.sql`(
             ${document.id},

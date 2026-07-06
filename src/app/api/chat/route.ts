@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     if(!isDuplicate) {await createNewMessage(message);}
-
+    
     // start with enbedding the quetion
     const questionArr: string[] = [question];
 
@@ -57,6 +57,8 @@ export async function POST(request: Request) {
         ${question}    
     </UserQuestion>
     `;
+
+    console.log("LLM PROMPT: " , prompt)
 
     // "Gemini-2.5-Flash-Native-Audio-Dialog"
 
@@ -117,24 +119,28 @@ Do not include any text after the closing </Answer> tag.`
                         }
 
                         if (isStreaming) {
-                            const regex = /(<\/Answer>|<\/Answe|<\/Answ|<\/Ans|<\/An|<\/A|<\/)$/;
-                            if (regex.test(text)) {
-                                isStreaming = false;
-                                const newText = text.substring(0, text.indexOf('<'));
-                                controller.enqueue(encoder.encode(newText));
-                                buffer = buffer.substring(0, buffer.lastIndexOf('<'))
+                            // const regex = /(<\/Answer>|<\/Answe|<\/Answ|<\/Ans|<\/An|<\/A|<\/)$/;
+                            // if (regex.test(text)) {
+                            //     isStreaming = false;
+                            //     const newText = text.substring(0, text.indexOf('<'));
+                            //     controller.enqueue(encoder.encode(newText));
+                            //     buffer = buffer.substring(0, buffer.lastIndexOf('<'))
 
+                            //     //storing this response to db;
+                            //     messageAgent.content = buffer;
+                            //     console.log("create new message ran for llm" , messageAgent);
+                            //     await createNewMessage(messageAgent);
+
+                            //     break;
+                            // }
+
+                            const closeIndex = buffer.indexOf('</Answer>');
+                            if (closeIndex !== -1) {
+                                isStreaming = false;
                                 //storing this response to db;
                                 messageAgent.content = buffer;
                                 console.log("create new message ran for llm" , messageAgent);
                                 await createNewMessage(messageAgent);
-
-                                break;
-                            }
-
-                            const closeIndex = buffer.indexOf('</Answer>') + 8;
-                            if (closeIndex !== -1) {
-                                isStreaming = false;
                             }
                             controller.enqueue(encoder.encode(text));
 

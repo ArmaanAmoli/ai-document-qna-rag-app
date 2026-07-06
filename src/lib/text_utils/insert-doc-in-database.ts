@@ -52,6 +52,7 @@ export async function insertDocInDatabase(text: string, filename: string, filety
     }
     try {
         await insertDocument(document, AllChunksAndEmbedding , chatId);
+        console.log("document inserted")
     }
     catch (error) {
         throw error

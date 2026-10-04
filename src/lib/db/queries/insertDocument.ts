@@ -10,7 +10,6 @@ export async function insertDocument(
 ) {
   console.log('document insertion begin');
   return await prisma.$transaction(async tx => {
-    // tx->transaction client
     const docRow = Prisma.sql`(
             ${document.id},
             ${document.name},
@@ -23,7 +22,6 @@ export async function insertDocument(
 
     const sqlRows = chunkAndEmbedding.map(ce => {
       const chunkID = createId();
-      const vectorString = `[${ce.embedding.join(',')}]`;
       return Prisma.sql`(
                 ${chunkID},
                 ${document.id},

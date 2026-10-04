@@ -42,18 +42,7 @@ export default function Chat({ params }: { params: Promise<{ id: string }> }) {
     };
     getChatHistory(chatId);
     console.log('USE EFFECT AT THE CHAT PAGE END', messagesArray);
-  }, []);
-
-  const props = {
-    prompt,
-    setPrompt,
-    file,
-    setFile,
-    messagesArray,
-    setMessagesArray,
-    chatId,
-    isStreaming,
-  };
+  }, [chatId]);
 
   return (
     <ChatWindow

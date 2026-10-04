@@ -1,4 +1,3 @@
-import { Message } from '@/types/chat.types';
 import { MessagePropInterface } from '@/types/componentProps.types';
 import { sendChatMessage } from './chat-api-call';
 import { displayStreamingReply } from './displayStreamingReply';

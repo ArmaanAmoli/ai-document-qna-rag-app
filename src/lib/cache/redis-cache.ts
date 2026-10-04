@@ -9,7 +9,7 @@ export function getRedisClient(): Redis {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     redisClient = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
+      retryStrategy: times => {
         if (times > 3) return null; // Stop retrying
         return Math.min(times * 200, 2000);
       },
@@ -17,7 +17,7 @@ export function getRedisClient(): Redis {
       lazyConnect: true,
     });
 
-    redisClient.on('error', (err) => {
+    redisClient.on('error', err => {
       console.error('Redis connection error:', err);
     });
 
@@ -55,26 +55,26 @@ export async function semanticCacheLookup(
   tenantId?: string
 ): Promise<{ answer: string; metadata: Record<string, unknown> } | null> {
   const redis = getRedisClient();
-  
+
   try {
     // For now, use exact key lookup with threshold-based fallback
     // In production, you'd use Redis Vector Similarity Search (Redis Stack)
     // or a dedicated vector DB for semantic cache
-    
+
     // Check exact match first
     const exactKey = generateExactCacheKey(JSON.stringify(queryEmbedding), tenantId);
     const exactCached = await redis.get(exactKey);
-    
+
     if (exactCached) {
       const parsed = JSON.parse(exactCached);
       console.log('Exact semantic cache hit');
       return parsed;
     }
-    
+
     // TODO: Implement vector similarity search for semantic cache
     // This would require Redis Stack with RediSearch module
     // or a separate vector index
-    
+
     return null;
   } catch (error) {
     console.error('Semantic cache lookup error:', error);
@@ -91,11 +91,11 @@ export async function semanticCacheStore(
   tenantId?: string
 ): Promise<void> {
   const redis = getRedisClient();
-  
+
   try {
     const exactKey = generateExactCacheKey(JSON.stringify(queryEmbedding), tenantId);
     const value = JSON.stringify({ answer, metadata, cachedAt: new Date().toISOString() });
-    
+
     await redis.setex(exactKey, ttlSeconds, value);
     console.log('Stored in semantic cache');
   } catch (error) {
@@ -106,11 +106,11 @@ export async function semanticCacheStore(
 // Embedding cache: cache query embeddings to avoid recomputation
 export async function embeddingCacheLookup(text: string): Promise<number[] | null> {
   const redis = getRedisClient();
-  
+
   try {
     const key = generateEmbeddingCacheKey(text);
     const cached = await redis.get(key);
-    
+
     if (cached) {
       console.log('Embedding cache hit');
       return JSON.parse(cached);
@@ -128,7 +128,7 @@ export async function embeddingCacheStore(
   ttlSeconds: number = 86400 // 24 hours
 ): Promise<void> {
   const redis = getRedisClient();
-  
+
   try {
     const key = generateEmbeddingCacheKey(text);
     await redis.setex(key, ttlSeconds, JSON.stringify(embedding));
@@ -144,11 +144,11 @@ export async function responseCacheLookup(
   tenantId?: string
 ): Promise<{ answer: string; sources: string[]; metadata: Record<string, unknown> } | null> {
   const redis = getRedisClient();
-  
+
   try {
     const key = generateExactCacheKey(query, tenantId);
     const cached = await redis.get(key);
-    
+
     if (cached) {
       console.log('Response cache hit');
       return JSON.parse(cached);
@@ -169,11 +169,11 @@ export async function responseCacheStore(
   tenantId?: string
 ): Promise<void> {
   const redis = getRedisClient();
-  
+
   try {
     const key = generateExactCacheKey(query, tenantId);
     const value = JSON.stringify({ answer, sources, metadata, cachedAt: new Date().toISOString() });
-    
+
     await redis.setex(key, ttlSeconds, value);
     console.log('Stored response in cache');
   } catch (error) {
@@ -184,7 +184,7 @@ export async function responseCacheStore(
 // Cache invalidation: invalidate by pattern (e.g., when documents update)
 export async function invalidateCacheByPattern(pattern: string): Promise<number> {
   const redis = getRedisClient();
-  
+
   try {
     const keys = await redis.keys(pattern);
     if (keys.length > 0) {
@@ -217,15 +217,15 @@ export async function getCacheStats(): Promise<{
   hitRate: number;
 }> {
   const redis = getRedisClient();
-  
+
   try {
     const info = await redis.info('memory');
     const keyspace = await redis.info('keyspace');
-    
+
     // Parse memory usage
     const memoryMatch = info.match(/used_memory_human:(\S+)/);
     const memoryUsage = memoryMatch ? memoryMatch[1] : 'unknown';
-    
+
     // Parse total keys
     let totalKeys = 0;
     const keyspaceLines = keyspace.split('\n');
@@ -233,7 +233,7 @@ export async function getCacheStats(): Promise<{
       const match = line.match(/keys=(\d+)/);
       if (match) totalKeys += parseInt(match[1], 10);
     }
-    
+
     return {
       totalKeys,
       memoryUsage,

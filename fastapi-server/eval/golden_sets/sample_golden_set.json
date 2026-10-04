@@ -24,16 +24,36 @@
     "All products come with a 1-year manufacturer's warranty. Extended warranties are available for purchase."
   ],
   "contexts": [
-    ["Refund Policy: Customers may return items within 30 days of purchase for a full refund. Items must be in original packaging with all accessories. Proof of purchase required."],
-    ["Password Reset: If you forget your password, click the 'Forgot Password' link on the sign-in page. Enter your email address and we'll send you a link to create a new password."],
-    ["Shipping Options: Standard Shipping (5-7 business days) - Free on orders over $50. Express Shipping (2-3 business days) - $9.99. Overnight Shipping (1 business day) - $24.99."],
-    ["Order Cancellation: You can cancel your order within 1 hour of placing it. After 1 hour, orders are sent to fulfillment and cannot be cancelled."],
-    ["Payment Methods: We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, Apple Pay, and Google Pay."],
-    ["Delivery Times: Standard shipping delivers in 5-7 business days. Express shipping delivers in 2-3 business days. Overnight shipping delivers next business day."],
-    ["Privacy Policy: We collect personal information to process orders and improve services. We do not sell your data to third parties. See full policy at privacy.example.com."],
-    ["International Shipping: We ship to 50+ countries. Duties and taxes are the responsibility of the recipient. Delivery times vary by country."],
-    ["Customer Support: Email: support@example.com. Phone: 1-800-XXX-XXXX (Mon-Fri 9am-6pm EST). Live chat available on website."],
-    ["Warranty: All products include a 1-year limited manufacturer warranty. Covers defects in materials and workmanship. Extended 3-year warranty available for $29.99."]
+    [
+      "Refund Policy: Customers may return items within 30 days of purchase for a full refund. Items must be in original packaging with all accessories. Proof of purchase required."
+    ],
+    [
+      "Password Reset: If you forget your password, click the 'Forgot Password' link on the sign-in page. Enter your email address and we'll send you a link to create a new password."
+    ],
+    [
+      "Shipping Options: Standard Shipping (5-7 business days) - Free on orders over $50. Express Shipping (2-3 business days) - $9.99. Overnight Shipping (1 business day) - $24.99."
+    ],
+    [
+      "Order Cancellation: You can cancel your order within 1 hour of placing it. After 1 hour, orders are sent to fulfillment and cannot be cancelled."
+    ],
+    [
+      "Payment Methods: We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, Apple Pay, and Google Pay."
+    ],
+    [
+      "Delivery Times: Standard shipping delivers in 5-7 business days. Express shipping delivers in 2-3 business days. Overnight shipping delivers next business day."
+    ],
+    [
+      "Privacy Policy: We collect personal information to process orders and improve services. We do not sell your data to third parties. See full policy at privacy.example.com."
+    ],
+    [
+      "International Shipping: We ship to 50+ countries. Duties and taxes are the responsibility of the recipient. Delivery times vary by country."
+    ],
+    [
+      "Customer Support: Email: support@example.com. Phone: 1-800-XXX-XXXX (Mon-Fri 9am-6pm EST). Live chat available on website."
+    ],
+    [
+      "Warranty: All products include a 1-year limited manufacturer warranty. Covers defects in materials and workmanship. Extended 3-year warranty available for $29.99."
+    ]
   ],
   "ground_truths": [
     "Refunds are allowed within 30 days with receipt and original packaging.",

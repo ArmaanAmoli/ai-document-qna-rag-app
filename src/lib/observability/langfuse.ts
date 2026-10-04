@@ -1,21 +1,22 @@
 import { Langfuse } from 'langfuse';
 
-// Initialize Langfuse client
-// Requires LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY environment variables
-// Optional: LANGFUSE_HOST for self-hosted instances
-export const langfuse = new Langfuse({
-  publicKey: process.env.LANGFUSE_PUBLIC_KEY || '',
-  secretKey: process.env.LANGFUSE_SECRET_KEY || '',
-  baseUrl: process.env.LANGFUSE_HOST || 'https://cloud.langfuse.com',
-  enabled: !!process.env.LANGFUSE_PUBLIC_KEY && !!process.env.LANGFUSE_SECRET_KEY,
-  // Flush events asynchronously, don't block the main thread
-  flushInterval: 5000,
-  flushAt: 10,
-});
+// Check if Langfuse is configured
+const isLangfuseConfigured = !!process.env.LANGFUSE_PUBLIC_KEY && !!process.env.LANGFUSE_SECRET_KEY;
+
+// Initialize Langfuse client if configured
+export const langfuse = isLangfuseConfigured
+  ? new Langfuse({
+      publicKey: process.env.LANGFUSE_PUBLIC_KEY || '',
+      secretKey: process.env.LANGFUSE_SECRET_KEY || '',
+      baseUrl: process.env.LANGFUSE_HOST || 'https://cloud.langfuse.com',
+      flushInterval: 5000,
+      flushAt: 10,
+    })
+  : null;
 
 // Export a no-op client if not configured
 export const getLangfuse = () => {
-  if (!langfuse.enabled) {
+  if (!isLangfuseConfigured || !langfuse) {
     return {
       trace: () => ({
         span: () => ({ end: () => {}, update: () => {} }),
@@ -52,11 +53,14 @@ export function createRagTrace(params: {
 }
 
 // Helper to create a span within a trace
-export function createSpan(trace: ReturnType<typeof createRagTrace>, params: {
-  name: string;
-  input?: unknown;
-  metadata?: Record<string, unknown>;
-}) {
+export function createSpan(
+  trace: ReturnType<typeof createRagTrace>,
+  params: {
+    name: string;
+    input?: unknown;
+    metadata?: Record<string, unknown>;
+  }
+) {
   return trace.span({
     name: params.name,
     input: params.input,

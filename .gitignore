@@ -46,5 +46,22 @@ next-env.d.ts
 
 /models
 
-/fastapi-server/.venv/*
-/fastapi-server/source/__pycache__/*
+# Python
+/fastapi-server/venv/
+/fastapi-server/.venv/
+/fastapi-server/__pycache__/
+/fastapi-server/source/__pycache__/
+/fastapi-server/*.pyc
+/fastapi-server/*.pyo
+/fastapi-server/*.pyd
+/fastapi-server/.Python
+/fastapi-server/pip-log.txt
+/fastapi-server/pip-delete-this-directory.txt
+/fastapi-server/.coverage
+/fastapi-server/htmlcov/
+/fastapi-server/.pytest_cache/
+/fastapi-server/.mypy_cache/
+/fastapi-server/.tox/
+/fastapi-server/dist/
+/fastapi-server/build/
+/fastapi-server/*.egg-info/

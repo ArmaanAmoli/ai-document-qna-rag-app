@@ -6,7 +6,7 @@ async function run() {
   const buffer = readFileSync(filePath);
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const { text } = await extractText(pdf, { mergePages: true });
-  pdf.destroy();
+  await pdf.cleanup();
   process.stdout.write(text);
 }
 

@@ -7,6 +7,7 @@ import { Message } from '@/types/chat.types';
 import { getUserInfoFromCookies } from '@/lib/cookie_utils/getUserInfo';
 import { prisma } from '@/lib/db/prisma';
 import { NextRequest } from 'next/server';
+import { Prisma } from '@/generated/prisma/client';
 
 interface ChatRequestBody {
   question: string;
@@ -122,9 +123,17 @@ export async function POST(request: NextRequest) {
   const questionArr: string[] = [question];
   const embeddedQuestion = await generateEmbedding(questionArr);
 
-  // Do a vector search over the vector db
+  // Do a hybrid search (vector + BM25) over the vector db with ACL filtering
   const embeddedQuestionE = embeddedQuestion[0];
-  const contextString: string = await searchContent(embeddedQuestionE);
+  const searchResult = await searchContent({
+    embedding: embeddedQuestionE,
+    limit: 10,
+    tenantId: user.tenantId || undefined,
+    aclGroups: user.roles || [],
+    query: question,
+  });
+  const contextString: string = searchResult.context;
+  const retrievedChunks = searchResult.chunks;
 
   // creating LLM prompt
   const prompt: string = `
@@ -194,6 +203,10 @@ Do not include any text after the closing </Answer> tag.`;
                 answerComplete = true;
                 const answerContent = answerBuffer.substring(0, closeIdx);
                 messageAgent.content = answerContent;
+                messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
+                messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
+                messageAgent.modelVersion = 'gemini-2.5-flash';
+                messageAgent.promptVersion = 'v1';
                 console.log('create new message ran for llm', messageAgent);
                 await createNewMessage(messageAgent);
                 controller.enqueue(encoder.encode(answerContent));
@@ -214,6 +227,10 @@ Do not include any text after the closing </Answer> tag.`;
               answerComplete = true;
               const answerContent = answerBuffer.substring(0, closeIdx);
               messageAgent.content = answerContent;
+              messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
+              messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
+              messageAgent.modelVersion = 'gemini-2.5-flash';
+              messageAgent.promptVersion = 'v1';
               console.log('create new message ran for llm', messageAgent);
               await createNewMessage(messageAgent);
               controller.enqueue(encoder.encode(answerContent));
@@ -228,6 +245,10 @@ Do not include any text after the closing </Answer> tag.`;
         // If stream ended but we never found closing tag, save what we have
         if (foundAnswerTag && !answerComplete && answerBuffer.length > 0) {
           messageAgent.content = answerBuffer;
+          messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
+          messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
+          messageAgent.modelVersion = 'gemini-2.5-flash';
+          messageAgent.promptVersion = 'v1';
           console.log('create new message ran for llm (stream ended)', messageAgent);
           await createNewMessage(messageAgent);
         }

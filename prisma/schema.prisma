@@ -20,6 +20,11 @@ model User {
   profilePicture Bytes?
   password       String?
   chat           Chat[]
+  tenantId       String?  // For multi-tenant support
+  roles          String[] @default([]) // User roles for RBAC
+
+  @@index([tenantId])
+  @@index([email])
 }
 
 model Document {
@@ -32,31 +37,87 @@ model Document {
   updatedAt      DateTime        @updatedAt
   documentChunks DocumentChunk[]
   chat           Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  tenantId       String?         // For multi-tenant support
+  aclGroups      String[]        @default([]) // Groups allowed to access this document
+  sourceModifiedAt DateTime?     // Track source document freshness
+  embeddingVersion String?       // Track embedding model version for reindexing
+  contentHash    String?         // For incremental indexing (detect changes)
+
+  @@index([chatId])
+  @@index([tenantId])
 }
 
 model DocumentChunk {
-  id         String                     @id @default(cuid())
+  id         String         @id @default(cuid())
   documentId String
   content    String
   embedding  Unsupported("vector(384)")
   chunkIndex Int
-  createdAt  DateTime                   @default(now())
-  document   Document                   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  document   Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tenantId   String?        // For multi-tenant filtering
+  aclGroups  String[]       @default([]) // ACL groups for this chunk
+  contentTsVector Unsupported("tsvector") // For full-text search (BM25)
+
+  @@index([documentId])
+  @@index([tenantId])
+  // HNSW index for vector similarity search will be created via migration
+  // GIN index for full-text search will be created via migration
 }
 
 model Chat {
   id        String     @id @default(cuid())
   userId    String
+  tenantId  String?    // For multi-tenant support
+  title     String?    // Chat title from first message
   documents Document[]
   messages  Message[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
 }
 
 model Message {
-  id      String @id @default(cuid())
-  content String
-  index   Int
-  chatId  String
-  isHuman Boolean
-  chat    Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  content         String
+  index           Int
+  chatId          String
+  isHuman         Boolean
+  chat            Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sourceChunkIds  String[] @default([]) // IDs of chunks used as sources
+  retrievalScores Float[]  @default([]) // Relevance scores for each source
+  modelVersion    String?  // Model used for generation
+  promptVersion   String?  // Prompt template version
+  latencyMs       Int?     // End-to-end latency
+  tokenUsage      Json?    // Token usage breakdown
+
+  @@index([chatId])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  tenantId      String?
+  chatId        String?
+  query         String
+  rewrittenQuery String?
+  retrievedChunkIds String[]
+  retrievalScores Float[]
+  answer        String
+  modelVersion  String
+  promptVersion String
+  latencyMs     Int
+  promptTokens  Int
+  completionTokens Int
+  totalTokens   Int
+  status        String   // success, error, refused
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([chatId])
+  @@index([createdAt])
+  @@index([status])
 }

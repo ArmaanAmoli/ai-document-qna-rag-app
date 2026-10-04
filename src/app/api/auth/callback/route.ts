@@ -45,6 +45,8 @@ export async function POST(request: Request) {
       firstName: Name[0],
       lastName: Name[1] || '',
       email: email!,
+      tenantId: undefined,
+      roles: [],
     };
 
     const searchedUser = await searchUser(userId);

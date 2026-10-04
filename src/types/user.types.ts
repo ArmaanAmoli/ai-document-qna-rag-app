@@ -5,4 +5,6 @@ export interface User {
   email: string;
   profilePic?: Uint8Array;
   passwordHash?: string;
+  tenantId?: string;
+  roles: string[];
 }

@@ -22,11 +22,13 @@ export async function insertDocument(
 
     const sqlRows = chunkAndEmbedding.map(ce => {
       const chunkID = createId();
+      // Use parameterized vector embedding - no string interpolation
+      const vectorEmbedding = `[${ce.embedding.join(',')}]`;
       return Prisma.sql`(
                 ${chunkID},
                 ${document.id},
                 ${ce.chunk.content},
-                ${Prisma.raw(`'${`[${ce.embedding.join(',')}]`}'::vector`)},
+                ${vectorEmbedding}::vector,
                 ${ce.chunk.index},
                 NOW()
             )`;

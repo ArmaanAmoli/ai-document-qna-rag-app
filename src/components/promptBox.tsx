@@ -1,8 +1,8 @@
 'use client';
 import { MessagePropInterface } from '@/types/componentProps.types';
 import { useRef, useEffect, useCallback } from 'react';
-import { Message } from '@/types/chat.types';
 import { sendPrompt } from '@/app/services/sendPrompt';
+import Image from 'next/image';
 
 export function Prompt(props: MessagePropInterface) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -14,7 +14,7 @@ export function Prompt(props: MessagePropInterface) {
         await sendPrompt(props, true);
       }
     }
-  }, [props.messagesArray, props.isStreaming, props]);
+  }, [props]);
 
   useEffect(() => {
     handleResend();
@@ -49,10 +49,12 @@ export function Prompt(props: MessagePropInterface) {
         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/20 transition-colors duration-300 ease-in-out hover:bg-white/20"
         onClick={() => fileInputRef.current?.click()}
       >
-        <img
+        <Image
           src="/icons/upload.svg"
-          className="h-6/12 w-6/12 -translate-x-[0.4px] -translate-y-[.5px] object-contain"
           alt="Upload"
+          width={12}
+          height={12}
+          className="-translate-x-[0.4px] -translate-y-[.5px] object-contain"
         />
       </button>
 
@@ -63,10 +65,12 @@ export function Prompt(props: MessagePropInterface) {
         }}
         className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/20 hover:bg-white/20 hover:transition"
       >
-        <img
+        <Image
           src="/icons/send.svg"
-          className="h-6/12 w-6/12 -translate-x-[1px] translate-y-[1px] object-contain"
           alt="Send"
+          width={12}
+          height={12}
+          className="-translate-x-[1px] translate-y-[1px] object-contain"
         />
       </button>
     </div>

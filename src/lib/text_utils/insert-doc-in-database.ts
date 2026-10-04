@@ -1,7 +1,7 @@
 import { chunkText } from './chunk-text';
 import { generateEmbedding } from './embedding';
 import { createId } from '@paralleldrive/cuid2';
-import { Chunk, ChunkAndEmbedding, DocumentChunkTS, DocumentTS } from '@/types';
+import { Chunk, ChunkAndEmbedding, DocumentTS } from '@/types';
 import { insertDocument } from '../db/queries/insertDocument';
 
 export async function insertDocInDatabase(
@@ -24,10 +24,7 @@ export async function insertDocInDatabase(
   //Chunking;
 
   const chunks: Chunk[] = chunkText(text, 400, 50);
-  const chunkTextArray: string[] = chunks.map((value, index) => {
-    const text: string = value.content;
-    return text;
-  });
+  const chunkTextArray: string[] = chunks.map(value => value.content);
 
   const embededArray: number[][] = await generateEmbedding(chunkTextArray);
 
@@ -37,12 +34,6 @@ export async function insertDocInDatabase(
       embedding: value,
     };
   });
-
-  //Embedding on each chunk
-  // chunks.forEach(async (chunk) => {
-  //     const embedding = await generateEmbedding(chunk.content);
-  //     AllChunksAndEmbedding.push({ chunk: chunk, embedding: embedding });
-  // });
 
   console.log('all chunks embedded');
 

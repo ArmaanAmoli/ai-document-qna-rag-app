@@ -1,4 +1,4 @@
-import { DocumentChunk, Document } from '@/generated/prisma/client';
+import { DocumentChunk } from '@/generated/prisma/client';
 
 interface PDFData {
   text: string; // The Extracted raw text

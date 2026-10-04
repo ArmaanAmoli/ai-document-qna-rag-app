@@ -1,0 +1,50 @@
+{
+  "questions": [
+    "What is the refund policy for returns?",
+    "How do I reset my password?",
+    "What are the shipping options available?",
+    "Can I cancel my order after placing it?",
+    "What payment methods do you accept?",
+    "How long does delivery take?",
+    "What is your privacy policy?",
+    "Do you offer international shipping?",
+    "How can I contact customer support?",
+    "What is the warranty period for products?"
+  ],
+  "answers": [
+    "Our refund policy allows returns within 30 days of purchase with original receipt. Items must be in original condition.",
+    "To reset your password, click 'Forgot Password' on the login page and follow the email instructions.",
+    "We offer standard shipping (5-7 business days), express shipping (2-3 business days), and overnight shipping.",
+    "Orders can be cancelled within 1 hour of placement. After that, they enter processing and cannot be cancelled.",
+    "We accept Visa, Mastercard, American Express, Discover, PayPal, and Apple Pay.",
+    "Standard delivery takes 5-7 business days. Express delivery takes 2-3 business days.",
+    "Our privacy policy outlines how we collect, use, and protect your personal information. Full details at privacy.example.com.",
+    "Yes, we ship to over 50 countries. International shipping rates and times vary by destination.",
+    "You can contact support via email at support@example.com, phone at 1-800-XXX-XXXX, or live chat on our website.",
+    "All products come with a 1-year manufacturer's warranty. Extended warranties are available for purchase."
+  ],
+  "contexts": [
+    ["Refund Policy: Customers may return items within 30 days of purchase for a full refund. Items must be in original packaging with all accessories. Proof of purchase required."],
+    ["Password Reset: If you forget your password, click the 'Forgot Password' link on the sign-in page. Enter your email address and we'll send you a link to create a new password."],
+    ["Shipping Options: Standard Shipping (5-7 business days) - Free on orders over $50. Express Shipping (2-3 business days) - $9.99. Overnight Shipping (1 business day) - $24.99."],
+    ["Order Cancellation: You can cancel your order within 1 hour of placing it. After 1 hour, orders are sent to fulfillment and cannot be cancelled."],
+    ["Payment Methods: We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, Apple Pay, and Google Pay."],
+    ["Delivery Times: Standard shipping delivers in 5-7 business days. Express shipping delivers in 2-3 business days. Overnight shipping delivers next business day."],
+    ["Privacy Policy: We collect personal information to process orders and improve services. We do not sell your data to third parties. See full policy at privacy.example.com."],
+    ["International Shipping: We ship to 50+ countries. Duties and taxes are the responsibility of the recipient. Delivery times vary by country."],
+    ["Customer Support: Email: support@example.com. Phone: 1-800-XXX-XXXX (Mon-Fri 9am-6pm EST). Live chat available on website."],
+    ["Warranty: All products include a 1-year limited manufacturer warranty. Covers defects in materials and workmanship. Extended 3-year warranty available for $29.99."]
+  ],
+  "ground_truths": [
+    "Refunds are allowed within 30 days with receipt and original packaging.",
+    "Click 'Forgot Password' on login page and follow email instructions to reset.",
+    "Standard (5-7 days), Express (2-3 days), and Overnight shipping available.",
+    "Orders can be cancelled within 1 hour of placement only.",
+    "Visa, Mastercard, Amex, Discover, PayPal, Apple Pay, and Google Pay accepted.",
+    "Standard delivery 5-7 business days, Express 2-3 business days.",
+    "Personal data collected for order processing, not sold to third parties.",
+    "International shipping to 50+ countries, recipient pays duties/taxes.",
+    "Email support@example.com, call 1-800-XXX-XXXX, or use live chat.",
+    "1-year manufacturer warranty standard, 3-year extended warranty available."
+  ]
+}

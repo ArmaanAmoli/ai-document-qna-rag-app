@@ -1,14 +1,12 @@
-import { execSync } from "child_process";
-import { join } from "path";
+import { execFile } from 'child_process';
+import { join } from 'path';
+import { promisify } from 'util';
 
-export function loadPDF(uniqueName: string): string {
-  const filePath = join(process.cwd(), "public", "uploads", uniqueName);
+const execFileAsync = promisify(execFile);
+
+export async function loadPDF(uniqueName: string): Promise<string> {
+  const filePath = join(process.cwd(), 'public', 'uploads', uniqueName);
   // pdftotext is a native binary, runs outside Node heap entirely
-  const text = execSync(`pdftotext "${filePath}" -`).toString();
-  return text;
+  const { stdout } = await execFileAsync('pdftotext', [filePath, '-']);
+  return stdout.toString();
 }
-// const memoryData = process.memoryUsage();
-// const maxRamUsed = memoryData.heapUsed / 1024 / 1024;
-
-// console.log(`Peak JavaScript Heap Used: ${maxRamUsed.toFixed(2)} MB`);
-// console.log(loadPDF("transformer.pdf"))

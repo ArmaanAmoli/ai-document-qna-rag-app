@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Ensure this utility is Edge-compatible (e.g., uses 'jose' rather than 'jsonwebtoken')
-import { verifyToken } from '@/lib/auth_utils/jwtTokenUtil'; 
+import { verifyToken } from '@/lib/auth_utils/jwtTokenUtil';
 
 // 1. Define paths that DO NOT require authentication (Public Routes)
-const PUBLIC_PATHS = ['/']; 
+const PUBLIC_PATHS = ['/'];
 
 export default async function middleware(request: NextRequest) {
-  
   const { pathname } = request.nextUrl;
   const tokenCookie = request.cookies.get('session');
   const token = tokenCookie?.value;

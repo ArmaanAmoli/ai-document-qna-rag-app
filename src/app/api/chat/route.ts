@@ -1,54 +1,133 @@
-import { searchContent } from "@/lib/db/queries/searchContent";
-import { generateEmbedding } from "@/lib/text_utils/embedding";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-import { createId } from "@paralleldrive/cuid2";
-import { createNewMessage } from "@/lib/db/queries/message_queries/create_message";
-import { Message } from "@/types/chat.types";
+import { searchContent } from '@/lib/db/queries/searchContent';
+import { generateEmbedding } from '@/lib/text_utils/embedding';
+import { GoogleGenAI } from '@google/genai';
+import { createId } from '@paralleldrive/cuid2';
+import { createNewMessage } from '@/lib/db/queries/message_queries/create_message';
+import { Message } from '@/types/chat.types';
+import { getUserInfoFromCookies } from '@/lib/cookie_utils/getUserInfo';
+import { prisma } from '@/lib/db/prisma';
+import { NextRequest } from 'next/server';
 
-export async function POST(request: Request) {
+interface ChatRequestBody {
+  question: string;
+  chatId: string;
+  idx: number;
+  isDuplicate: boolean;
+}
 
-    const body = await request.json();
-    console.log(body);
+export async function POST(request: NextRequest) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    const { question, chatId, idx, isDuplicate } = body;
+  // Input validation
+  if (!body || typeof body !== 'object') {
+    return new Response(JSON.stringify({ error: 'Request body must be an object' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    console.log(question);
+  const { question, chatId, idx, isDuplicate } = body as ChatRequestBody;
 
+  if (typeof question !== 'string' || question.trim().length === 0) {
+    return new Response(
+      JSON.stringify({ error: 'Question is required and must be a non-empty string' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
 
-    var messageId: string = createId();
+  if (question.length > 10000) {
+    return new Response(
+      JSON.stringify({ error: 'Question exceeds maximum length of 10000 characters' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
 
-    // storing the message to db
-    let message: Message = {
-        id: messageId,
-        content: question,
-        chatId: chatId,
-        index: idx,
-        isHuman: true
-    };
+  if (typeof chatId !== 'string' || chatId.trim().length === 0) {
+    return new Response(
+      JSON.stringify({ error: 'chatId is required and must be a non-empty string' }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
 
-    let messageAgent: Message = {
-        id: createId(),
-        content: "",
-        chatId: chatId,
-        index: idx + 1,
-        isHuman: false
-    }
+  if (typeof idx !== 'number' || idx < 0 || !Number.isInteger(idx)) {
+    return new Response(JSON.stringify({ error: 'idx must be a non-negative integer' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    if(!isDuplicate) {await createNewMessage(message);}
-    
-    // start with enbedding the quetion
-    const questionArr: string[] = [question];
+  if (typeof isDuplicate !== 'boolean') {
+    return new Response(JSON.stringify({ error: 'isDuplicate must be a boolean' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    const embeddedQuestion = await generateEmbedding(questionArr);
+  console.log({ question, chatId, idx, isDuplicate });
 
-    // Do a vector search over the vector db
-    const embeddedQuestionE = embeddedQuestion[0];
-    const contextString: string = await searchContent(embeddedQuestionE);
+  // Verify user owns this chat
+  const user = getUserInfoFromCookies(request);
+  const chat = await prisma.$queryRaw<{ userId: string }[]>`
+        SELECT "userId" FROM "Chat" WHERE "id" = ${chatId}
+    `;
 
-    //creating LLM prompt
+  if (chat.length === 0 || chat[0].userId !== user.id) {
+    return new Response(JSON.stringify({ error: 'Chat not found or access denied' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-    const prompt: string =
-        `
+  const messageId: string = createId();
+
+  // storing the message to db
+  const message: Message = {
+    id: messageId,
+    content: question,
+    chatId: chatId,
+    index: idx,
+    isHuman: true,
+  };
+
+  const messageAgent: Message = {
+    id: createId(),
+    content: '',
+    chatId: chatId,
+    index: idx + 1,
+    isHuman: false,
+  };
+
+  if (!isDuplicate) {
+    await createNewMessage(message);
+  }
+
+  // start with embedding the question
+  const questionArr: string[] = [question];
+  const embeddedQuestion = await generateEmbedding(questionArr);
+
+  // Do a vector search over the vector db
+  const embeddedQuestionE = embeddedQuestion[0];
+  const contextString: string = await searchContent(embeddedQuestionE);
+
+  // creating LLM prompt
+  const prompt: string = `
     <Context>
         ${contextString}
     </Context>
@@ -58,11 +137,9 @@ export async function POST(request: Request) {
     </UserQuestion>
     `;
 
-    console.log("LLM PROMPT: " , prompt)
+  console.log('LLM PROMPT: ', prompt);
 
-    // "Gemini-2.5-Flash-Native-Audio-Dialog"
-
-    const instruction: string = `You are a precise document analysis assistant. Your job is to carefully read and analyze the provided context, then answer the user's question based solely on that context.
+  const instruction: string = `You are a precise document analysis assistant. Your job is to carefully read and analyze the provided context, then answer the user's question based solely on that context.
 
 You will be given:
 - A <Context> section containing the document or relevant excerpts to analyze
@@ -79,93 +156,96 @@ Instructions:
 Your answer here
 </Answer>
 
-Do not include any text after the closing </Answer> tag.`
+Do not include any text after the closing </Answer> tag.`;
 
-    const ai = new GoogleGenAI({});
-    const responseStream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            systemInstruction: instruction,
+  const ai = new GoogleGenAI({});
+  const responseStream = await ai.models.generateContentStream({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      systemInstruction: instruction,
+    },
+  });
 
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      let answerBuffer: string = '';
+      let foundAnswerTag = false;
+      let answerComplete = false;
+
+      try {
+        for await (const chunk of responseStream) {
+          const text = chunk.text;
+          if (!text) continue;
+
+          answerBuffer += text;
+
+          if (!foundAnswerTag) {
+            const openingIdx = answerBuffer.indexOf('<Answer>');
+            if (openingIdx !== -1) {
+              foundAnswerTag = true;
+              // Remove everything up to and including <Answer>
+              answerBuffer = answerBuffer.substring(openingIdx + '<Answer>'.length);
+              // Check if closing tag is also in this chunk
+              const closeIdx = answerBuffer.indexOf('</Answer>');
+              if (closeIdx !== -1) {
+                // Answer is complete in this chunk
+                answerComplete = true;
+                const answerContent = answerBuffer.substring(0, closeIdx);
+                messageAgent.content = answerContent;
+                console.log('create new message ran for llm', messageAgent);
+                await createNewMessage(messageAgent);
+                controller.enqueue(encoder.encode(answerContent));
+                answerBuffer = answerBuffer.substring(closeIdx + '</Answer>'.length);
+              } else {
+                // Stream the content after <Answer>
+                controller.enqueue(encoder.encode(answerBuffer));
+                answerBuffer = '';
+              }
+            }
+            // If no <Answer> tag yet, continue buffering
+            continue;
+          }
+
+          if (foundAnswerTag && !answerComplete) {
+            const closeIdx = answerBuffer.indexOf('</Answer>');
+            if (closeIdx !== -1) {
+              answerComplete = true;
+              const answerContent = answerBuffer.substring(0, closeIdx);
+              messageAgent.content = answerContent;
+              console.log('create new message ran for llm', messageAgent);
+              await createNewMessage(messageAgent);
+              controller.enqueue(encoder.encode(answerContent));
+              answerBuffer = answerBuffer.substring(closeIdx + '</Answer>'.length);
+            } else {
+              // Stream the chunk
+              controller.enqueue(encoder.encode(text));
+            }
+          }
         }
-    });
 
-    const stream = new ReadableStream({
-        async start(controller) {
-            const encoder = new TextEncoder();
-
-            try {
-                //we want to only extract the response inside <Answer> </Answer> tags
-                let buffer: string = '';
-                let isStreaming: boolean = false;
-
-                for await (const chunk of responseStream) {
-                    let text = chunk.text;
-                    if (text) {
-                        buffer += text;
-
-                        if (!isStreaming) {
-                            isStreaming = true;
-
-                            const openingIdx = buffer.indexOf('<Answer>');
-                            if (openingIdx != -1) {
-                                isStreaming = true;
-                                buffer = buffer.substring((openingIdx + ('<Answer>'.length)));
-                                console.log(buffer)
-                                controller.enqueue(encoder.encode(buffer));
-                                continue;
-                            }
-                        }
-
-                        if (isStreaming) {
-                            // const regex = /(<\/Answer>|<\/Answe|<\/Answ|<\/Ans|<\/An|<\/A|<\/)$/;
-                            // if (regex.test(text)) {
-                            //     isStreaming = false;
-                            //     const newText = text.substring(0, text.indexOf('<'));
-                            //     controller.enqueue(encoder.encode(newText));
-                            //     buffer = buffer.substring(0, buffer.lastIndexOf('<'))
-
-                            //     //storing this response to db;
-                            //     messageAgent.content = buffer;
-                            //     console.log("create new message ran for llm" , messageAgent);
-                            //     await createNewMessage(messageAgent);
-
-                            //     break;
-                            // }
-
-                            const closeIndex = buffer.indexOf('</Answer>');
-                            if (closeIndex !== -1) {
-                                isStreaming = false;
-                                //storing this response to db;
-                                messageAgent.content = buffer;
-                                console.log("create new message ran for llm" , messageAgent);
-                                await createNewMessage(messageAgent);
-                            }
-                            controller.enqueue(encoder.encode(text));
-
-                        }
-                    }
-                }
-            }
-            catch (error) {
-                console.error("Gemini processing stream error:", error);
-                controller.error(error);
-            }
-
-            finally {
-                controller.close();
-            }
+        // If stream ended but we never found closing tag, save what we have
+        if (foundAnswerTag && !answerComplete && answerBuffer.length > 0) {
+          messageAgent.content = answerBuffer;
+          console.log('create new message ran for llm (stream ended)', messageAgent);
+          await createNewMessage(messageAgent);
         }
-    });
-    return new Response(stream, {
-        headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-cache, no-transform',
-            'X-message-object': JSON.stringify(message!),
-            'X-agent-message-object': JSON.stringify(messageAgent!),
-        },
+      } catch (error) {
+        console.error('Gemini processing stream error:', error);
+        controller.error(error);
+      } finally {
+        controller.close();
+      }
+    },
+  });
 
-    });
-
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-message-object': JSON.stringify(message),
+      'X-agent-message-object': JSON.stringify(messageAgent),
+    },
+  });
 }

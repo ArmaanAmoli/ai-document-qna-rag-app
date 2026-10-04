@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { Message } from "./chat.types";
-import React, { Dispatch , SetStateAction , RefObject} from "react";
+import { Message } from './chat.types';
+import React, { Dispatch, SetStateAction, RefObject } from 'react';
 
-export interface MessagePropInterface{
-    prompt:string;
-    setPrompt: Dispatch<SetStateAction<string>>;
-    file:File|null;
-    setFile: Dispatch<SetStateAction<File|null>>;
-    messagesArray:Message[];
-    setMessagesArray:Dispatch<SetStateAction<Message[]>>;
-    chatId:string;
-    isStreaming:RefObject<boolean>;
+export interface MessagePropInterface {
+  prompt: string;
+  setPrompt: Dispatch<SetStateAction<string>>;
+  file: File | null;
+  setFile: Dispatch<SetStateAction<File | null>>;
+  messagesArray: Message[];
+  setMessagesArray: Dispatch<SetStateAction<Message[]>>;
+  chatId: string;
+  isStreaming: RefObject<boolean>;
 }
 
-export interface ChatWindowComponentInterface extends MessagePropInterface{
-    children: React.ReactNode;
+export interface ChatWindowComponentInterface extends MessagePropInterface {
+  children: React.ReactNode;
 }
 
-export interface UploadedFile{
-    file:File;
-    name:string;
-    size:number;
-    type:string;
+export interface UploadedFile {
+  file: File;
+  name: string;
+  size: number;
+  type: string;
 }
 
 // interface AgentMessage{

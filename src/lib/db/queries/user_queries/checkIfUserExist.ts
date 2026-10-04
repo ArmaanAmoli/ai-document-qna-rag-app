@@ -1,9 +1,16 @@
-import { Prisma } from "@/generated/prisma/client";
-import {prisma} from "../../prisma";
-import { User } from "@/types/user.types";
+import { prisma } from '../../prisma';
 
-export async function searchUser(userId: string){
-    const user = await prisma.$queryRaw`(SELECT id , name , email , "joinedAt" FROM "User" WHERE id=${userId})`;
-    return user;
+interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  joinedAt: Date;
+}
+
+export async function searchUser(userId: string): Promise<UserRow[]> {
+  const user = await prisma.$queryRaw<UserRow[]>`
+    SELECT id, name, email, "joinedAt" FROM "User" WHERE id=${userId}
+  `;
+  return user;
 }
 // returns an array of record objects if array size zero user does not exist;

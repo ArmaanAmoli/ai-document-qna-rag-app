@@ -1,16 +1,20 @@
-import { prisma } from "../prisma";
+import { prisma } from '../prisma';
 
-export async function searchContent(embedding:number[]):Promise<string>{
-    const contextVector:string = `[${embedding.join(',')}]`;
-    const chunks:{content:string}[] = await prisma.$queryRaw`
+export async function searchContent(embedding: number[], limit: number = 10): Promise<string> {
+  const contextVector: string = `[${embedding.join(',')}]`;
+  const chunks: { content: string }[] = await prisma.$queryRaw`
     SELECT content FROM "DocumentChunk" 
     ORDER BY embedding <=> ${contextVector}::vector
-    LIMIT 10`;
+    LIMIT ${limit}`;
 
-    let contextString:string = "";
-    chunks.forEach((chunk)=>{
-        contextString += (chunk.content + " ");
-    });
+  if (chunks.length === 0) {
+    return 'No relevant document chunks found for this query.';
+  }
 
-    return contextString;
+  let contextString: string = '';
+  chunks.forEach(chunk => {
+    contextString += chunk.content + ' ';
+  });
+
+  return contextString;
 }

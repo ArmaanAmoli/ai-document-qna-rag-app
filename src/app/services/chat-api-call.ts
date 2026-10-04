@@ -4,29 +4,16 @@ export async function sendChatMessage(
   idx: number,
   isDuplicate: boolean
 ) {
-  // question chatID , idx-> length of message array , isDuplicate ,
-  const body = {
-    question,
-    chatId,
-    idx,
-    isDuplicate,
-  };
-
   const chatResponse = await fetch('/api/chat', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ question, chatId, idx, isDuplicate }),
     credentials: 'include',
   });
-  // const chatRes = await chatResponse.json();
 
   return chatResponse;
 }
 
 export async function fetchChatHistory(chatId: string) {
-  const body = {
-    chatId: chatId,
-  };
-
   const res = await fetch(`/api/chat/history/${chatId}`, {
     method: 'GET',
     credentials: 'include',

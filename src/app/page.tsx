@@ -3,7 +3,6 @@
 import { SetStateAction, useState, Dispatch } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { ChangeEvent } from 'react';
-import { NextResponse } from 'next/server';
 
 type EnterMode = 'login' | 'signup';
 

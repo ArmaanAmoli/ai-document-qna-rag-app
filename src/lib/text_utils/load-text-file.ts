@@ -1,4 +1,4 @@
-import { readFile, mkdir } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { join } from 'path';
 export async function loadTextFile(uniqueName: string): Promise<string> {
   try {

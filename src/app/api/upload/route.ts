@@ -15,11 +15,16 @@ import {
   calculateFileHash,
 } from '@/lib/file_utils/validation';
 import { createId } from '@paralleldrive/cuid2';
+import { uploadLimiter } from '@/lib/rate-limit';
 
 const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResponse = await uploadLimiter(req);
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     // gather user info from cookies
     const userInfo = getUserInfoFromCookies(req);

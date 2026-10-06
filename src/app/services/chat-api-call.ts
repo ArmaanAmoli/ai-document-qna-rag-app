@@ -46,3 +46,38 @@ export async function deleteChat(chatId: string) {
   });
   return res.json();
 }
+
+// Document management API calls
+export async function renameDocument(documentId: string, name: string) {
+  const res = await fetch(`/api/documents/${documentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function retryDocument(documentId: string) {
+  const res = await fetch(`/api/documents/${documentId}`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function deleteDocument(documentId: string) {
+  const res = await fetch(`/api/documents/${documentId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function fetchDocuments(chatId: string) {
+  const res = await fetch(`/api/chats/${chatId}/documents`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  return res.json();
+}

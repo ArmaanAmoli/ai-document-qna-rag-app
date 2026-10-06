@@ -3,11 +3,31 @@ import { prisma } from '../prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { createId } from '@paralleldrive/cuid2';
 
-export async function insertDocument(
-  document: DocumentTS,
-  chunkAndEmbedding: ChunkAndEmbedding[],
-  chatId: string
-) {
+interface InsertDocumentOptions {
+  document: DocumentTS;
+  chunkAndEmbedding: ChunkAndEmbedding[];
+  chatId: string;
+  pageCount?: number;
+  charCount?: number;
+  chunkCount?: number;
+  contentHash?: string;
+  tenantId?: string;
+  aclGroups?: string[];
+}
+
+export async function insertDocument(options: InsertDocumentOptions) {
+  const {
+    document,
+    chunkAndEmbedding,
+    chatId,
+    pageCount,
+    charCount,
+    chunkCount,
+    contentHash,
+    tenantId,
+    aclGroups = [],
+  } = options;
+
   console.log('document insertion begin');
   return await prisma.$transaction(async tx => {
     const docRow = Prisma.sql`(
@@ -17,7 +37,17 @@ export async function insertDocument(
             ${document.size},
             NOW(),
             NOW(),
-            ${chatId}
+            ${chatId},
+            ${tenantId ?? null},
+            ${Prisma.join(aclGroups.map(g => Prisma.sql`${g}`))},
+            ${pageCount ?? null},
+            ${charCount ?? null},
+            ${chunkCount ?? null},
+            ${contentHash ?? null},
+            'ready',
+            NOW(),
+            0,
+            3
         )`;
 
     const sqlRows = chunkAndEmbedding.map(ce => {
@@ -30,17 +60,27 @@ export async function insertDocument(
                 ${ce.chunk.content},
                 ${vectorEmbedding}::vector,
                 ${ce.chunk.index},
-                NOW()
+                NOW(),
+                ${tenantId ?? null},
+                ${Prisma.join(aclGroups.map(g => Prisma.sql`${g}`))},
+                NULL::tsvector
             )`;
     });
 
     await tx.$executeRaw`
-        INSERT INTO "Document" ("id" , "name" , "type" , "size" , "createdAt" , "updatedAt" , "chatId") 
+        INSERT INTO "Document" 
+          ("id", "name", "type", "size", "createdAt", "updatedAt", "chatId", 
+           "tenantId", "aclGroups", "pageCount", "charCount", "chunkCount", 
+           "contentHash", "status", "processingCompletedAt", "retryCount", "maxRetries")
         VALUES ${docRow}`;
 
-    await tx.$executeRaw`
-        INSERT INTO "DocumentChunk" ("id" , "documentId" , "content" , "embedding" , "chunkIndex" , "createdAt") 
-        VALUES ${Prisma.join(sqlRows)}
-        `;
+    if (sqlRows.length > 0) {
+      await tx.$executeRaw`
+          INSERT INTO "DocumentChunk" 
+            ("id", "documentId", "content", "embedding", "chunkIndex", "createdAt", 
+             "tenantId", "aclGroups", "contentTsVector")
+          VALUES ${Prisma.join(sqlRows)}
+          `;
+    }
   });
 }

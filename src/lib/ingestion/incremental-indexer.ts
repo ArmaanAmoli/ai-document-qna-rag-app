@@ -98,16 +98,23 @@ export async function processDocument(doc: DocumentToIndex): Promise<IndexingRes
       size: doc.size,
     };
 
-    // Insert document and chunks
-    await insertDocument(document, chunkAndEmbeddings, doc.chatId);
+    // Insert document and chunks with metadata
+    await insertDocument({
+      document,
+      chunkAndEmbedding: chunkAndEmbeddings,
+      chatId: doc.chatId,
+      pageCount: undefined,
+      charCount: doc.content.length,
+      chunkCount: chunks.length,
+      contentHash,
+      tenantId: doc.tenantId,
+      aclGroups: doc.aclGroups || [],
+    });
 
-    // Update document with metadata
+    // Update document with additional metadata
     await prisma.document.update({
       where: { id: documentId },
       data: {
-        contentHash,
-        tenantId: doc.tenantId,
-        aclGroups: doc.aclGroups || [],
         sourceModifiedAt: doc.sourceModifiedAt || new Date(),
         embeddingVersion: process.env.EMBEDDING_MODEL_VERSION || 'all-MiniLM-L6-v2',
       },

@@ -1,5 +1,5 @@
 import { getDocumentProxy, extractText } from 'unpdf';
-import { readFile, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 // argv -> full path of directory , target file name , actual command
 const filePath = process.argv[2];
 async function run() {

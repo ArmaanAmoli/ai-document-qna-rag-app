@@ -7,7 +7,6 @@ import { Message } from '@/types/chat.types';
 import { getUserInfoFromCookies } from '@/lib/cookie_utils/getUserInfo';
 import { prisma } from '@/lib/db/prisma';
 import { NextRequest } from 'next/server';
-import { Prisma } from '@/generated/prisma/client';
 
 interface ChatRequestBody {
   question: string;

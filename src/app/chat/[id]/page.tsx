@@ -42,6 +42,7 @@ export default function Chat({ params }: { params: Promise<{ id: string }> }) {
     };
     getChatHistory(chatId);
     console.log('USE EFFECT AT THE CHAT PAGE END', messagesArray);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
 
   return (

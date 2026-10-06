@@ -212,7 +212,7 @@ export async function reconcileDocuments(
   }
 
   // Handle deleted documents (in source but not in DB, or in DB but not in source)
-  for (const [id, existing] of existingMap) {
+  for (const [id, _existing] of existingMap) {
     if (!sourceIds.has(id)) {
       await hardDeleteDocument(id);
       deleted++;

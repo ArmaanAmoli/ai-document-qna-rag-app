@@ -25,7 +25,7 @@ interface SearchContentOptions {
 export async function searchContent(
   options: SearchContentOptions
 ): Promise<{ context: string; chunks: SearchResult[] }> {
-  const { embedding, limit = 10, userId, tenantId, aclGroups = [], query } = options;
+  const { embedding, limit = 10, tenantId, aclGroups = [], query } = options;
 
   const contextVector: string = `[${embedding.join(',')}]`;
   const rrfK = 60; // RRF constant

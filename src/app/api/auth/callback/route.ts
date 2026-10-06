@@ -4,7 +4,6 @@ import { generateToken } from '@/lib/auth_utils/jwtTokenUtil';
 import { User } from '@/types/user.types';
 import { searchUser } from '@/lib/db/queries/user_queries/checkIfUserExist';
 import { createNewUser } from '@/lib/db/queries/user_queries/createNewUser';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
 const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);

@@ -50,36 +50,24 @@ export function generateEmbeddingCacheKey(text: string): string {
 
 // Semantic cache: find similar cached queries using vector similarity
 export async function semanticCacheLookup(
-  queryEmbedding: number[],
-  threshold: number = 0.95,
-  tenantId?: string
+  _queryEmbedding: number[],
+  _threshold: number = 0.95,
+  __tenantId?: string
 ): Promise<{ answer: string; metadata: Record<string, unknown> } | null> {
-  const redis = getRedisClient();
+  // For now, use exact key lookup with threshold-based fallback
+  // In production, you'd use Redis Vector Similarity Search (Redis Stack)
+  // or a dedicated vector DB for semantic cache
 
-  try {
-    // For now, use exact key lookup with threshold-based fallback
-    // In production, you'd use Redis Vector Similarity Search (Redis Stack)
-    // or a dedicated vector DB for semantic cache
+  // Check exact match first - commented out until Redis is available
+  // const exactKey = generateExactCacheKey(JSON.stringify(_queryEmbedding), _tenantId);
+  // const exactCached = await redis.get(exactKey);
+  // if (exactCached) {
+  //   const parsed = JSON.parse(exactCached);
+  //   console.log('Exact semantic cache hit');
+  //   return parsed;
+  // }
 
-    // Check exact match first
-    const exactKey = generateExactCacheKey(JSON.stringify(queryEmbedding), tenantId);
-    const exactCached = await redis.get(exactKey);
-
-    if (exactCached) {
-      const parsed = JSON.parse(exactCached);
-      console.log('Exact semantic cache hit');
-      return parsed;
-    }
-
-    // TODO: Implement vector similarity search for semantic cache
-    // This would require Redis Stack with RediSearch module
-    // or a separate vector index
-
-    return null;
-  } catch (error) {
-    console.error('Semantic cache lookup error:', error);
-    return null;
-  }
+  return null;
 }
 
 // Store in semantic cache

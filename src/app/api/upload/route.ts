@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     // renaming file to a unique name
-    const documentId: string = createId();
     const fileExtension: string = extname(file.name);
     const fileBaseName: string = basename(file.name, fileExtension);
     const uniqueName: string = `${fileBaseName}-${Date.now()}-${Math.round(Math.random() * 1e5)}${fileExtension}`;
@@ -100,7 +99,7 @@ export async function POST(req: NextRequest) {
         // Verify user owns this chat using updated fetchChatMessages
         try {
           await fetchChatMessages(chatId, userInfo.id);
-        } catch (authError) {
+        } catch {
           throw new Error('Chat not found or access denied');
         }
 

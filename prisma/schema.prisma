@@ -42,9 +42,22 @@ model Document {
   sourceModifiedAt DateTime?     // Track source document freshness
   embeddingVersion String?       // Track embedding model version for reindexing
   contentHash    String?         // For incremental indexing (detect changes)
+  
+  // Processing status tracking
+  status         String          @default("pending") // pending, uploading, extracting, chunking, embedding, indexing, ready, failed, deleting, deleted
+  processingError String?        // User-safe error message
+  pageCount      Int?            // Number of pages in document
+  charCount      Int?            // Extracted character count
+  chunkCount     Int?            // Number of chunks created
+  processingStartedAt DateTime?  // When processing started
+  processingCompletedAt DateTime? // When processing completed
+  retryCount     Int             @default(0)
+  maxRetries     Int             @default(3)
 
   @@index([chatId])
   @@index([tenantId])
+  @@index([status])
+  @@index([chatId, status])
 }
 
 model DocumentChunk {
@@ -86,6 +99,7 @@ model Message {
   isHuman         Boolean
   chat            Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sourceChunkIds  String[] @default([]) // IDs of chunks used as sources
+  sourceDocumentIds String[] @default([]) // IDs of documents used as sources
   retrievalScores Float[]  @default([]) // Relevance scores for each source
   modelVersion    String?  // Model used for generation
   promptVersion   String?  // Prompt template version

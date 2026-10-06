@@ -5,6 +5,7 @@ interface RawChatWithLatestMessage {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  title: string | null;
   latestMessageContent: string | null;
   latestMessageIsHuman: boolean | null;
   latestMessageCreatedAt: Date | null;
@@ -15,6 +16,7 @@ export interface ChatWithLatestMessage {
   userId: string;
   createdAt: Date;
   updatedAt: Date;
+  title: string | null;
   latestMessage: {
     content: string;
     isHuman: boolean;
@@ -29,6 +31,7 @@ export async function fetchUserChats(userId: string): Promise<ChatWithLatestMess
       c."userId",
       c."createdAt",
       c."updatedAt",
+      c."title",
       m."content" as "latestMessageContent",
       m."isHuman" as "latestMessageIsHuman",
       m."createdAt" as "latestMessageCreatedAt"
@@ -49,6 +52,7 @@ export async function fetchUserChats(userId: string): Promise<ChatWithLatestMess
     userId: chat.userId,
     createdAt: chat.createdAt,
     updatedAt: chat.updatedAt,
+    title: chat.title,
     latestMessage: chat.latestMessageContent
       ? {
           content: chat.latestMessageContent,

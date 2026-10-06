@@ -28,3 +28,21 @@ export async function fetchUserChats() {
   });
   return res.json();
 }
+
+export async function updateChatTitle(chatId: string, title: string) {
+  const res = await fetch(`/api/chats/${chatId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function deleteChat(chatId: string) {
+  const res = await fetch(`/api/chats/${chatId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}

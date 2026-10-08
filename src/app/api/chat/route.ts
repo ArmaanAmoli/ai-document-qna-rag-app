@@ -3,6 +3,7 @@ import { generateEmbedding } from '@/lib/text_utils/embedding';
 import { GoogleGenAI } from '@google/genai';
 import { createId } from '@paralleldrive/cuid2';
 import { createNewMessage } from '@/lib/db/queries/message_queries/create_message';
+import { fetchChatMessages } from '@/lib/db/queries/chat_queries/fetchChatMessages';
 import { Message } from '@/types/chat.types';
 import { getUserInfoFromCookies } from '@/lib/cookie_utils/getUserInfo';
 import { prisma } from '@/lib/db/prisma';
@@ -117,6 +118,10 @@ export async function POST(request: NextRequest) {
   if (!isDuplicate) {
     await createNewMessage(message);
   }
+
+  // Fetch conversation history for context
+  const chatHistory = await fetchChatMessages(chatId, user.id);
+  const recentHistory = chatHistory.slice(-10); // Last 10 messages for context
 
   // start with embedding the question
   const questionArr: string[] = [question];

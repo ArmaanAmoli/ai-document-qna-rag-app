@@ -7,6 +7,13 @@ interface MessageRow {
   index: number;
   chatId: string;
   isHuman: boolean;
+  sourceChunkIds: string[];
+  sourceDocumentIds: string[];
+  retrievalScores: number[];
+  modelVersion: string | null;
+  promptVersion: string | null;
+  latencyMs: number | null;
+  tokenUsage: Record<string, unknown> | null;
 }
 
 export async function fetchChatMessages(chatId: string, userId?: string): Promise<Message[]> {
@@ -22,7 +29,9 @@ export async function fetchChatMessages(chatId: string, userId?: string): Promis
   }
 
   const messages = await prisma.$queryRaw<MessageRow[]>`
-        SELECT "id", "content", "index", "chatId", "isHuman"
+        SELECT "id", "content", "index", "chatId", "isHuman",
+               "sourceChunkIds", "sourceDocumentIds", "retrievalScores",
+               "modelVersion", "promptVersion", "latencyMs", "tokenUsage"
         FROM "Message"
         WHERE "chatId" = ${chatId}
         ORDER BY "index" ASC
@@ -34,5 +43,12 @@ export async function fetchChatMessages(chatId: string, userId?: string): Promis
     index: m.index,
     chatId: m.chatId,
     isHuman: m.isHuman,
+    sourceChunkIds: m.sourceChunkIds || [],
+    sourceDocumentIds: m.sourceDocumentIds || [],
+    retrievalScores: m.retrievalScores || [],
+    modelVersion: m.modelVersion || undefined,
+    promptVersion: m.promptVersion || undefined,
+    latencyMs: m.latencyMs || undefined,
+    tokenUsage: m.tokenUsage || undefined,
   }));
 }

@@ -20,6 +20,7 @@ interface DocumentTS {
   size: number;
   createdAt?: Date;
   updatedAt?: Date;
+  filePath?: string;
 }
 
 interface Chunk {

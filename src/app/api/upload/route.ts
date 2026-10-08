@@ -103,10 +103,8 @@ export async function POST(req: NextRequest) {
           pageCount,
           tenantId: userInfo.tenantId,
           aclGroups: userInfo.roles,
+          filePath,
         });
-
-        // Delete file after successful DB insert
-        await unlink(filePath);
 
         // if the user also has a message with the upload then add it to db
         if (formData.get('message')) {
@@ -141,11 +139,9 @@ export async function POST(req: NextRequest) {
           pageCount,
           tenantId: userInfo.tenantId,
           aclGroups: userInfo.roles,
+          filePath,
         });
         console.log(chatId);
-
-        // Delete file after successful DB insert
-        await unlink(filePath);
       }
     } catch (error) {
       // Clean up file on error

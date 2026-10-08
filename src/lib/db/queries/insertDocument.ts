@@ -13,6 +13,7 @@ interface InsertDocumentOptions {
   contentHash?: string;
   tenantId?: string;
   aclGroups?: string[];
+  filePath?: string;
 }
 
 export async function insertDocument(options: InsertDocumentOptions) {
@@ -26,6 +27,7 @@ export async function insertDocument(options: InsertDocumentOptions) {
     contentHash,
     tenantId,
     aclGroups = [],
+    filePath,
   } = options;
 
   console.log('document insertion begin');
@@ -47,7 +49,8 @@ export async function insertDocument(options: InsertDocumentOptions) {
             'ready',
             NOW(),
             0,
-            3
+            3,
+            ${filePath ?? null}
         )`;
 
     const sqlRows = chunkAndEmbedding.map(ce => {
@@ -71,7 +74,7 @@ export async function insertDocument(options: InsertDocumentOptions) {
         INSERT INTO "Document" 
           ("id", "name", "type", "size", "createdAt", "updatedAt", "chatId", 
            "tenantId", "aclGroups", "pageCount", "charCount", "chunkCount", 
-           "contentHash", "status", "processingCompletedAt", "retryCount", "maxRetries")
+           "contentHash", "status", "processingCompletedAt", "retryCount", "maxRetries", "filePath")
         VALUES ${docRow}`;
 
     if (sqlRows.length > 0) {

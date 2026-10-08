@@ -10,6 +10,7 @@ interface MessageBoxProps {
 interface MessageBoxBotProps {
   message: string;
   sourceChunkIds?: string[];
+  sourceDocumentIds?: string[];
   retrievalScores?: number[];
   chatId?: string;
 }

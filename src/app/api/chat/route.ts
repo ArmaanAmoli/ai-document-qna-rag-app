@@ -227,6 +227,7 @@ Do not include any text after the closing </Answer> tag.`;
               const answerContent = answerBuffer.substring(0, closeIdx);
               messageAgent.content = answerContent;
               messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
+              messageAgent.sourceDocumentIds = retrievedChunks.map(c => c.documentId);
               messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
               messageAgent.modelVersion = 'gemini-2.5-flash';
               messageAgent.promptVersion = 'v1';

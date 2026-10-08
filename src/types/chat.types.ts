@@ -5,6 +5,7 @@ interface Message {
   index: number;
   isHuman: boolean;
   sourceChunkIds?: string[];
+  sourceDocumentIds?: string[];
   retrievalScores?: number[];
   modelVersion?: string;
   promptVersion?: string;

@@ -42,6 +42,7 @@ model Document {
   sourceModifiedAt DateTime?     // Track source document freshness
   embeddingVersion String?       // Track embedding model version for reindexing
   contentHash    String?         // For incremental indexing (detect changes)
+  filePath       String?         // Path to stored file for download
   
   // Processing status tracking
   status         String          @default("pending") // pending, uploading, extracting, chunking, embedding, indexing, ready, failed, deleting, deleted

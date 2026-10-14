@@ -1188,3 +1188,318 @@ The final response should include:
 Do not claim that a check passed unless it actually passed.
 
 Do not leave obvious TODOs, placeholder success responses, debug logs, fake data, or unfinished production paths.
+
+---
+
+# 26. Issues Discovered During Codebase Exploration
+
+The following issues were identified during thorough inspection of the repository that are NOT already documented in the existing notes (bug_fix_log, production_rag_plan, rag_sota_plan, MEMORY). These should be addressed as part of the productionization effort.
+
+## Critical Security & Data Integrity
+
+### 1. Message Model Field Persistence Bug (CRITICAL)
+- **Files**: `src/types/chat.types.ts`, `src/lib/db/queries/message_queries/create_message.ts`, `src/app/api/chat/route.ts`
+- **Issue**: The Prisma `Message` model includes fields `sourceChunkIds`, `sourceDocumentIds`, `retrievalScores`, `modelVersion`, `promptVersion`, `latencyMs`, `tokenUsage`, but:
+  - TypeScript `Message` type is missing `sourceDocumentIds` field
+  - `createNewMessage` function ONLY inserts `id, content, index, chatId, isHuman` - all new fields are lost
+  - Chat route sets `messageAgent.sourceChunkIds`, `retrievalScores`, `modelVersion`, `promptVersion` but they're never persisted
+- **Impact**: Source citations, retrieval scores, model version tracking, latency, and token usage are never stored
+
+### 2. Document Download Not Implemented (CRITICAL)
+- **File**: `src/app/api/documents/[id]/route.ts` (GET)
+- **Issue**: Returns 501 "File download not fully implemented - file storage path not tracked"
+- **Root cause**: Document model doesn't store file path; uploads saved to `public/uploads/` with generated name but path not recorded
+- **Impact**: Users cannot download uploaded documents
+
+### 3. Chat Page Broken - Empty chatId (CRITICAL)
+- **File**: `src/app/chat/page.tsx`
+- **Issue**: `chatId` hardcoded to empty string `""`
+- **Impact**: All chat API calls will fail; no conversation persistence; cannot load existing messages
+
+### 4. No Conversation Context in LLM Prompt (HIGH)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: Only sends current question + retrieved context; previous conversation messages not included
+- **Impact**: Multi-turn conversations don't work; LLM has no memory of prior Q&A
+
+## Functional Correctness
+
+### 5. PDF Page Count Not Extracted (HIGH)
+- **Files**: `src/lib/text_utils/load-pdf-file.ts`, `src/lib/text_utils/extract-text.ts`
+- **Issue**: `loadPDF` returns only text; `extractText` returns `pageCount: undefined` for PDFs
+- **Impact**: Document metadata incomplete; page references in citations won't work
+
+### 6. Missing Dynamic Chat Route (HIGH)
+- **Files**: `src/app/chat/page.tsx` (should be `src/app/chat/[id]/page.tsx`)
+- **Issue**: No route parameter for chat ID; cannot load specific conversation
+- **Impact**: Users can't continue previous conversations; no shareable chat URLs
+
+### 7. Rate Limiter Not Production-Ready (HIGH)
+- **File**: `src/lib/rate-limit.ts`
+- **Issue**: Uses in-memory `Map` - fails with multiple instances, serverless, or after restart
+- **Impact**: Rate limiting ineffective in production; no persistence across deployments
+
+### 8. No Request Timeout for LLM Calls (HIGH)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: `generateContentStream` has no timeout; can hang indefinitely
+- **Impact**: Requests can block forever on slow/unresponsive LLM provider
+
+### 9. No Circuit Breakers for External Services (HIGH)
+- **Directory**: `src/lib/resilience/` (empty)
+- **Issue**: No resilience patterns for embedding service, vector DB, or LLM provider
+- **Impact**: Cascading failures; no graceful degradation
+
+### 10. Missing Health/Readiness Endpoints (MEDIUM)
+- **Issue**: No `/healthz`, `/readyz` endpoints for load balancer/probe checks
+- **Impact**: Cannot monitor service health in production
+
+### 11. OpenTelemetry Never Initialized (MEDIUM)
+- **Files**: `src/lib/observability/otel.ts`, `src/app/layout.tsx`
+- **Issue**: `initOtel()` defined but never called
+- **Impact**: Distributed tracing not active
+
+### 12. Langfuse Not Integrated Into Chat Flow (MEDIUM)
+- **Files**: `src/lib/observability/langfuse.ts`, `src/app/api/chat/route.ts`
+- **Issue**: Langfuse client created but `createRagTrace`/`createSpan` never used in chat route
+- **Impact**: No LLM observability, cost tracking, or quality monitoring
+
+### 13. No Prompt Injection Protection (HIGH)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: User question and retrieved document content directly interpolated into prompt without sanitization
+- **Impact**: Malicious documents could inject instructions overriding system prompt
+
+### 14. Hardcoded Model Name (MEDIUM)
+- **Files**: `src/app/api/chat/route.ts`, `src/lib/observability/langfuse.ts`
+- **Issue**: `'gemini-2.5-flash'` hardcoded in multiple places
+- **Impact**: Cannot switch models without code changes; not configurable
+
+### 15. No Token Usage Tracking (MEDIUM)
+- **Files**: `src/app/api/chat/route.ts`, Prisma schema
+- **Issue**: `Message.tokenUsage` field exists but never populated
+- **Impact**: Cannot track costs or enforce token budgets
+
+### 16. No Latency Tracking (MEDIUM)
+- **Files**: `src/app/api/chat/route.ts`, Prisma schema
+- **Issue**: `Message.latencyMs` field exists but never populated
+- **Impact**: Cannot monitor performance or detect regressions
+
+### 17. No Audit Logging (MEDIUM)
+- **Files**: Prisma schema (`AuditLog` model), chat route
+- **Issue**: AuditLog model defined but nothing writes to it
+- **Impact**: No audit trail for compliance/debugging
+
+### 18. Missing Document Status in UI (MEDIUM)
+- **Files**: Document model has `status` field (pending/uploading/extracting/chunking/embedding/indexing/ready/failed/deleting/deleted) but no UI surfaces this
+- **Impact**: Users can't see processing progress; stuck documents appear broken
+
+### 19. Synchronous Document Processing Blocks Upload (MEDIUM)
+- **File**: `src/app/api/upload/route.ts`
+- **Issue**: Full ingestion pipeline (extract → chunk → embed → index) runs in request handler
+- **Impact**: Large documents timeout; poor UX; no retry visibility
+
+### 20. Content Hash Calculated But Not Used for Deduplication (LOW)
+- **Files**: `src/app/api/upload/route.ts`, `insertDocInDatabase`
+- **Issue**: `contentHash` computed but not checked before ingestion
+- **Impact**: Duplicate documents create duplicate chunks/embeddings
+
+## Code Quality & Maintainability
+
+### 21. Console.log Statements Throughout Production Code (LOW)
+- **Files**: Multiple (chat/route.ts, embedding.ts, chunk-text.ts, insert-doc-in-database.ts, upload/route.ts, etc.)
+- **Issue**: Debug logging left in production paths
+- **Impact**: Log noise; potential sensitive data leakage
+
+### 22. Potential XSS in Citations Component (MEDIUM)
+- **File**: `src/components/Citations.tsx`
+- **Issue**: `chunk.content` rendered directly in `<div>` without sanitization
+- **Impact**: If chunk contains HTML/JS, could execute in browser context
+
+### 23. Google OAuth Callback Doesn't Update Existing Users (LOW)
+- **File**: `src/app/api/auth/callback/route.ts`
+- **Issue**: Creates new user if not found, but never updates name/email for existing users
+- **Impact**: User profile stale after profile changes in Google
+
+### 24. No Password Reset Flow (MEDIUM)
+- **Issue**: Only email/password login and Google OAuth; no forgot/reset password
+- **Impact**: Users locked out if they forget password
+
+### 25. No Email Verification (MEDIUM)
+- **Issue**: Registered users can immediately access app without verifying email
+- **Impact**: Fake accounts; no reliable contact channel
+
+### 26. No Session Refresh Mechanism (MEDIUM)
+- **Issue**: JWT expires in 30 days; no refresh token; user logged out abruptly
+- **Impact**: Poor UX; forces re-authentication
+
+### 27. Missing Tenant/ACL Filtering in Some Queries (HIGH)
+- **Files**: Various query files
+- **Issue**: Not all vector/text searches consistently apply `tenantId` and `aclGroups` filters
+- **Impact**: Potential cross-tenant data leakage
+
+### 28. Inconsistent Prisma Import Paths (LOW)
+- **Files**: Multiple
+- **Issue**: Mix of `@/generated/prisma/client` and relative imports
+- **Impact**: Maintenance burden; potential build issues
+
+### 29. Message Index Collision Risk (HIGH)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: `idx` comes from client; concurrent requests can use same index; no unique constraint on (chatId, index)
+- **Impact**: Message ordering corruption; duplicate index errors
+
+### 30. No Request ID / Correlation ID (LOW)
+- **Issue**: No request ID generated or propagated through logs/traces
+- **Impact**: Difficult to debug production issues across services
+
+### 31. No Structured Logging (LOW)
+- **Issue**: Uses `console.log`/`console.error` with unstructured strings
+- **Impact**: Cannot parse/filter logs in production log aggregation
+
+### 32. No Input Sanitization for Filenames in Citations (LOW)
+- **File**: `src/components/Citations.tsx`
+- **Issue**: `documentName` from database rendered directly in UI
+- **Impact**: Potential XSS if malicious filename stored
+
+### 33. Missing Unique Constraint on Document contentHash (LOW)
+- **File**: Prisma schema
+- **Issue**: `contentHash` field exists but no unique index
+- **Impact**: Cannot efficiently prevent duplicate ingestion at DB level
+
+### 34. No Chunk Deduplication Across Documents (LOW)
+- **Issue**: Identical chunks across documents create duplicate embeddings
+- **Impact**: Wasted storage; slower retrieval
+
+### 35. Embedding Service No Retry Logic (MEDIUM)
+- **File**: `src/lib/text_utils/embedding.ts`
+- **Issue**: Single attempt with timeout; no exponential backoff retry
+- **Impact**: Transient failures cause document processing to fail
+
+### 36. No Maximum Conversation History Limit (MEDIUM)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: Could send unbounded history to LLM (though currently sends none - see #4)
+- **Impact**: Token budget exceeded; latency increase
+
+### 37. No Streaming Error Recovery (MEDIUM)
+- **File**: `src/app/api/chat/route.ts`
+- **Issue**: If stream errors mid-way, partial message saved; no retry
+- **Impact**: Incomplete answers persisted; user sees broken message
+
+### 38. Missing Database Migration for Vector Indexes (HIGH)
+- **File**: Prisma schema (comments mention HNSW/GIN indexes via migration)
+- **Issue**: No migration file found creating vector/text search indexes
+- **Impact**: Vector search will be slow (sequential scan) without HNSW index
+
+### 39. No Document Processing Job Abstraction (MEDIUM)
+- **Issue**: Processing logic inline in upload route; not extractable to worker/queue
+- **Impact**: Cannot scale processing; blocks API requests
+
+### 40. No Graceful Degradation for Vector DB Failure (MEDIUM)
+- **Issue**: If pgvector unavailable, entire Q&A fails; no BM25-only fallback
+- **Impact**: Single point of failure
+
+## Architecture Gaps vs. babypanda.md Requirements
+
+### 41. No Workspaces/Collections (P0 per spec)
+- **Spec**: Section 5 requires workspaces, collections, document organization
+- **Current**: Only chat-scoped documents; no collections
+
+### 42. No Landing Page Beyond Auth (P0 per spec)
+- **Spec**: Section 3 requires landing page, dashboard, document library
+- **Current**: Only auth page and chat page
+
+### 43. No Document Management UI (P0 per spec)
+- **Spec**: Section 6 requires rename, view details, download, retry, delete, filter, sort, paginate, search
+- **Current**: Only rename/delete/retry API endpoints; no UI
+
+### 44. No Document Processing Status UI (P0 per spec)
+- **Spec**: Section 7 requires explicit processing states with progress
+- **Current**: Status field in DB but no UI
+
+### 45. No Section-Aware Chunking (P0 per spec)
+- **Spec**: Section 8 requires preserving headings/sections
+- **Current**: Simple character-based chunking with space breaking
+
+### 46. No Hybrid Search (P0 per spec)
+- **Spec**: Section 10 requires hybrid retrieval
+- **Current**: `searchContent.ts` implements hybrid but chat route may not use optimally
+
+### 47. No Source Citations in Answers (P0 per spec)
+- **Spec**: Section 11 requires citations, page references, expandable excerpts
+- **Current**: Citations component exists but `sourceDocumentIds` not populated; page numbers missing
+
+### 48. No "Not Enough Information" Behavior (P0 per spec)
+- **Spec**: Section 11 requires explicit insufficient-evidence response
+- **Current**: Prompt says to say this but not verified; no UI distinction
+
+### 49. No Conversation Search/Pagination (P0 per spec)
+- **Spec**: Section 12 requires search/pagination for long histories
+- **Current**: Loads all messages for a chat
+
+### 50. No Security Headers (P0 per spec)
+- **Spec**: Section 14 requires CSP, HSTS, X-Content-Type-Options, etc.
+- **Current**: None configured
+
+### 51. No Usage/Cost Tracking (P0 per spec)
+- **Spec**: Section 15 requires tracking uploads, questions, tokens, costs
+- **Current**: TokenUsage field exists but unused
+
+### 52. No Structured Server Logs (P0 per spec)
+- **Spec**: Section 16 requires structured logs, request IDs, safe logging
+- **Current**: console.log only
+
+### 53. No Health/Readiness Endpoints (P0 per spec)
+- **Spec**: Section 16 requires health endpoint, DB connectivity check
+- **Current**: None
+
+### 54. No Accessibility Features (P0 per spec)
+- **Spec**: Section 18 requires keyboard nav, screen readers, ARIA
+- **Current**: Basic semantic HTML but no focus management, announcements, etc.
+
+### 55. No Tests (P0 per spec)
+- **Spec**: Section 19 requires unit, integration, e2e tests
+- **Current**: Only one embedding test
+
+### 56. No README Updates (P0 per spec)
+- **Spec**: Section 22 requires comprehensive README
+- **Current**: Minimal README
+
+### 57. No .env.example (P0 per spec)
+- **Spec**: Section 21 requires complete .env.example
+- **Current**: .env.example exists but may be incomplete
+
+### 58. No Multi-Tenant ACL Enforcement Verification (P0 per spec)
+- **Spec**: Section 4 requires user-scoped queries, prevention of cross-user access
+- **Current**: Partial implementation; needs audit
+
+### 59. No Prompt Injection Defense Verification (P0 per spec)
+- **Spec**: Section 11 requires defense against prompt injection in retrieved text
+- **Current**: No sanitization; direct interpolation
+
+### 60. No PII Detection (P0 per spec)
+- **Spec**: Section 1 Phase 1 requires PII detection on ingestion
+- **Current**: Not implemented
+
+---
+
+## Summary of Immediate Priorities
+
+Based on severity and dependency order:
+
+1. **Fix Message persistence** (createNewMessage must save all fields)
+2. **Fix chat page routing** (dynamic [id] route, load existing messages)
+3. **Implement document download** (store file path in Document model)
+4. **Add conversation context to LLM prompt**
+5. **Extract PDF page count**
+6. **Add request timeout for LLM**
+7. **Implement prompt injection protection**
+8. **Initialize OpenTelemetry and integrate Langfuse**
+9. **Replace in-memory rate limiter with Redis abstraction**
+10. **Add health/readiness endpoints**
+11. **Create document processing job abstraction**
+12. **Add HNSW/GIN indexes via migration**
+13. **Implement structured logging with request IDs**
+14. **Add password reset and email verification**
+15. **Build document management UI with status tracking**
+16. **Implement workspaces/collections**
+17. **Add comprehensive test suite**
+18. **Update README and .env.example**
+19. **Configure security headers**
+20. **Implement accessibility improvements

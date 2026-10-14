@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { initOtel } from '@/lib/observability/otel';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,6 +22,9 @@ export const metadata: Metadata = {
   description:
     'AI Document Q&A (RAG App) — Upload PDFs/docs, ask questions, get answers using RAG (Retrieval-Augmented Generation) with Next.js, TypeScript, PostgreSQL + pgvector, and LLMs.',
 };
+
+// Initialize OpenTelemetry
+initOtel();
 
 export default function RootLayout({
   children,

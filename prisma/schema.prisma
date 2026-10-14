@@ -108,6 +108,7 @@ model Message {
   tokenUsage      Json?    // Token usage breakdown
 
   @@index([chatId])
+  @@unique([chatId, index])
 }
 
 model AuditLog {

@@ -1,10 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth_utils/passwordUtil';
 import { generateToken } from '@/lib/auth_utils/jwtTokenUtil';
 import { User } from '@/types/user.types';
 import { searchUser } from '@/lib/db/queries/user_queries/checkIfUserExist';
 import { createNewUser } from '@/lib/db/queries/user_queries/createNewUser';
 import { cookies } from 'next/headers';
+import { asyncHandler, Errors } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
 
 function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,68 +29,61 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
-export async function POST(request: Request) {
+export const POST = asyncHandler(async (request: NextRequest) => {
   const cookieStore = await cookies();
+  const correlationId = request.headers.get('x-correlation-id');
 
-  try {
-    const body = await request.json();
-    const { email, password, firstName, lastName } = body;
+  const body = await request.json();
+  const { email, password, firstName, lastName } = body;
 
-    // Input validation
-    if (!email || !password || !firstName || !lastName) {
-      return NextResponse.json(
-        { error: 'All fields are required: firstName, lastName, email, password' },
-        { status: 400 }
-      );
-    }
-
-    if (!validateEmail(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
-    }
-
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      return NextResponse.json({ error: passwordValidation.error }, { status: 400 });
-    }
-
-    // Check if user already exists
-    const existingUser = await searchUser(email);
-    if (existingUser.length > 0) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Hash password
-    const passwordHash = await hashPassword(password);
-
-    // Create user
-    const user: User = {
-      id: crypto.randomUUID(),
-      firstName,
-      lastName,
-      email,
-      passwordHash,
-      tenantId: undefined,
-      roles: [],
-    };
-
-    await createNewUser(user);
-
-    // Generate token
-    const token = generateToken(user);
-
-    cookieStore.set('session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
-    }); // 30 days
-
-    return NextResponse.json({ authSuccess: true }, { status: 201 });
-  } catch (error) {
-    console.error('Registration error:', error);
-    return NextResponse.json({ authSuccess: false, error: 'Registration failed' }, { status: 500 });
+  // Input validation
+  if (!email || !password || !firstName || !lastName) {
+    throw Errors.validationMissingField('firstName, lastName, email, password', { fields: ['firstName', 'lastName', 'email', 'password'] }, correlationId);
   }
-}
+
+  if (!validateEmail(email)) {
+    throw Errors.validationInvalidInput('Invalid email format', { email }, correlationId);
+  }
+
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    throw Errors.validationInvalidInput(passwordValidation.error!, { email }, correlationId);
+  }
+
+  // Check if user already exists
+  const existingUser = await searchUser(email);
+  if (existingUser.length > 0) {
+    logger.warn('Registration attempt with existing email', { email, correlationId });
+    throw Errors.databaseConstraintViolation('email', { email }, undefined, correlationId);
+  }
+
+  // Hash password
+  const passwordHash = await hashPassword(password);
+
+  // Create user
+  const user: User = {
+    id: crypto.randomUUID(),
+    firstName,
+    lastName,
+    email,
+    passwordHash,
+    tenantId: undefined,
+    roles: [],
+  };
+
+  await createNewUser(user);
+
+  // Generate token
+  const token = generateToken(user);
+
+  cookieStore.set('session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30,
+  }); // 30 days
+
+  logger.info('User registered successfully', { userId: user.id, email: user.email, correlationId });
+
+  return NextResponse.json({ authSuccess: true }, { status: 201 });
+});

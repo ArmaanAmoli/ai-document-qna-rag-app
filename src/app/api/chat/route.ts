@@ -7,7 +7,10 @@ import { fetchChatMessages } from '@/lib/db/queries/chat_queries/fetchChatMessag
 import { Message } from '@/types/chat.types';
 import { getUserInfoFromCookies } from '@/lib/cookie_utils/getUserInfo';
 import { prisma } from '@/lib/db/prisma';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createRagTrace, createSpan, getLangfuse } from '@/lib/observability/langfuse';
+import { asyncHandler, Errors } from '@/lib/middleware/error-handler';
+import { logger } from '@/lib/logger';
 
 interface ChatRequestBody {
   question: string;
@@ -16,87 +19,64 @@ interface ChatRequestBody {
   isDuplicate: boolean;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = asyncHandler(async (request: NextRequest) => {
+  const correlationId = request.headers.get('x-correlation-id');
   let body: unknown;
+  
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    throw Errors.validationInvalidInput('Invalid JSON body', {}, correlationId);
   }
 
   // Input validation
   if (!body || typeof body !== 'object') {
-    return new Response(JSON.stringify({ error: 'Request body must be an object' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    throw Errors.validationInvalidInput('Request body must be an object', {}, correlationId);
   }
 
   const { question, chatId, idx, isDuplicate } = body as ChatRequestBody;
 
   if (typeof question !== 'string' || question.trim().length === 0) {
-    return new Response(
-      JSON.stringify({ error: 'Question is required and must be a non-empty string' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    throw Errors.validationMissingField('question', { field: 'question' }, correlationId);
   }
 
   if (question.length > 10000) {
-    return new Response(
-      JSON.stringify({ error: 'Question exceeds maximum length of 10000 characters' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    throw Errors.validationInvalidInput('Question exceeds maximum length of 10000 characters', { length: question.length }, correlationId);
   }
 
   if (typeof chatId !== 'string' || chatId.trim().length === 0) {
-    return new Response(
-      JSON.stringify({ error: 'chatId is required and must be a non-empty string' }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    throw Errors.validationMissingField('chatId', { field: 'chatId' }, correlationId);
   }
 
   if (typeof idx !== 'number' || idx < 0 || !Number.isInteger(idx)) {
-    return new Response(JSON.stringify({ error: 'idx must be a non-negative integer' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    throw Errors.validationInvalidInput('idx must be a non-negative integer', { idx }, correlationId);
   }
 
   if (typeof isDuplicate !== 'boolean') {
-    return new Response(JSON.stringify({ error: 'isDuplicate must be a boolean' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    throw Errors.validationInvalidInput('isDuplicate must be a boolean', { isDuplicate }, correlationId);
   }
 
-  console.log({ question, chatId, idx, isDuplicate });
+  logger.info('Chat request received', { question: question.substring(0, 100), chatId, idx, isDuplicate, correlationId });
 
   // Verify user owns this chat
   const user = getUserInfoFromCookies(request);
+  
   const chat = await prisma.$queryRaw<{ userId: string }[]>`
-        SELECT "userId" FROM "Chat" WHERE "id" = ${chatId}
-    `;
+    SELECT \"userId\" FROM \"Chat\" WHERE \"id\" = ${chatId}
+  `;
 
-  if (chat.length === 0 || chat[0].userId !== user.id) {
-    return new Response(JSON.stringify({ error: 'Chat not found or access denied' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  if (chat.length === 0) {
+    logger.warn('Chat not found', { chatId, userId: user.id, correlationId });
+    throw Errors.chatNotFound(chatId, { userId: user.id }, correlationId);
+  }
+
+  if (chat[0].userId !== user.id) {
+    logger.warn('Chat access denied', { chatId, userId: user.id, correlationId });
+    throw Errors.chatAccessDenied(chatId, user.id, {}, correlationId);
   }
 
   const messageId: string = createId();
+  const messageAgentId: string = createId();
 
   // storing the message to db
   const message: Message = {
@@ -108,7 +88,7 @@ export async function POST(request: NextRequest) {
   };
 
   const messageAgent: Message = {
-    id: createId(),
+    id: messageAgentId,
     content: '',
     chatId: chatId,
     index: idx + 1,
@@ -116,28 +96,69 @@ export async function POST(request: NextRequest) {
   };
 
   if (!isDuplicate) {
-    await createNewMessage(message);
+    try {
+      await createNewMessage(message);
+    } catch (error) {
+      logger.error('Failed to save user message', error, { chatId, messageId, correlationId });
+      throw Errors.chatMessageFailed({ chatId, messageId }, error, correlationId);
+    }
   }
 
   // Fetch conversation history for context
   const chatHistory = await fetchChatMessages(chatId, user.id);
   const recentHistory = chatHistory.slice(-10); // Last 10 messages for context
 
-  // start with embedding the question
-  const questionArr: string[] = [question];
-  const embeddedQuestion = await generateEmbedding(questionArr);
+  // Create trace for observability
+  const trace = createRagTrace({
+    userId: user.id,
+    sessionId: chatId,
+    query: question,
+    tenantId: user.tenantId,
+  });
 
+  // Start embedding span
+  const embedSpan = createSpan(trace, { name: 'embedding', input: question });
+  
+  // Generate embedding
+  let embeddedQuestion: number[][];
+  try {
+    const questionArr: string[] = [question];
+    embeddedQuestion = await generateEmbedding(questionArr);
+    embedSpan.end({ output: { dimensions: embeddedQuestion[0].length } });
+  } catch (error) {
+    embedSpan.end({ level: 'ERROR', output: { error: String(error) } });
+    logger.error('Embedding generation failed', error, { question: question.substring(0, 100), correlationId });
+    throw Errors.embeddingGenerationFailed({ question: question.substring(0, 100) }, error, correlationId);
+  }
+
+  // Start search span
+  const searchSpan = createSpan(trace, { name: 'hybrid_search', input: { question: question.substring(0, 100) } });
+  
   // Do a hybrid search (vector + BM25) over the vector db with ACL filtering
   const embeddedQuestionE = embeddedQuestion[0];
-  const searchResult = await searchContent({
-    embedding: embeddedQuestionE,
-    limit: 10,
-    tenantId: user.tenantId || undefined,
-    aclGroups: user.roles || [],
-    query: question,
-  });
+  let searchResult;
+  try {
+    searchResult = await searchContent({
+      embedding: embeddedQuestionE,
+      limit: 10,
+      tenantId: user.tenantId || undefined,
+      aclGroups: user.roles || [],
+      query: question,
+    });
+    searchSpan.end({ output: { chunksFound: searchResult.chunks.length } });
+  } catch (error) {
+    searchSpan.end({ level: 'ERROR', output: { error: String(error) } });
+    logger.error('Search failed', error, { correlationId });
+    throw Errors.ragSearchFailed({ question: question.substring(0, 100) }, error, correlationId);
+  }
+
   const contextString: string = searchResult.context;
   const retrievedChunks = searchResult.chunks;
+
+  if (retrievedChunks.length === 0) {
+    logger.info('No relevant context found', { question: question.substring(0, 100), correlationId });
+    throw Errors.ragNoRelevantContext(question, { chatId }, correlationId);
+  }
 
   // creating LLM prompt
   const prompt: string = `
@@ -149,8 +170,6 @@ export async function POST(request: NextRequest) {
         ${question}    
     </UserQuestion>
     `;
-
-  console.log('LLM PROMPT: ', prompt);
 
   const instruction: string = `You are a precise document analysis assistant. Your job is to carefully read and analyze the provided context, then answer the user's question based solely on that context.
 
@@ -171,14 +190,24 @@ Your answer here
 
 Do not include any text after the closing </Answer> tag.`;
 
+  // Start LLM span
+  const llmSpan = createSpan(trace, { name: 'llm_generation', input: { promptLength: prompt.length } });
+
   const ai = new GoogleGenAI({});
-  const responseStream = await ai.models.generateContentStream({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      systemInstruction: instruction,
-    },
-  });
+  let responseStream;
+  try {
+    responseStream = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: instruction,
+      },
+    });
+  } catch (error) {
+    llmSpan.end({ level: 'ERROR', output: { error: String(error) } });
+    logger.error('LLM generation failed', error, { correlationId });
+    throw Errors.llmGenerationFailed({ model: 'gemini-2.5-flash' }, error, correlationId);
+  }
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -198,30 +227,19 @@ Do not include any text after the closing </Answer> tag.`;
             const openingIdx = answerBuffer.indexOf('<Answer>');
             if (openingIdx !== -1) {
               foundAnswerTag = true;
-              // Remove everything up to and including <Answer>
               answerBuffer = answerBuffer.substring(openingIdx + '<Answer>'.length);
-              // Check if closing tag is also in this chunk
               const closeIdx = answerBuffer.indexOf('</Answer>');
               if (closeIdx !== -1) {
-                // Answer is complete in this chunk
                 answerComplete = true;
                 const answerContent = answerBuffer.substring(0, closeIdx);
-                messageAgent.content = answerContent;
-                messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
-                messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
-                messageAgent.modelVersion = 'gemini-2.5-flash';
-                messageAgent.promptVersion = 'v1';
-                console.log('create new message ran for llm', messageAgent);
-                await createNewMessage(messageAgent);
+                await saveAgentMessage(messageAgent, answerContent, retrievedChunks, controller, encoder);
                 controller.enqueue(encoder.encode(answerContent));
                 answerBuffer = answerBuffer.substring(closeIdx + '</Answer>'.length);
               } else {
-                // Stream the content after <Answer>
                 controller.enqueue(encoder.encode(answerBuffer));
                 answerBuffer = '';
               }
             }
-            // If no <Answer> tag yet, continue buffering
             continue;
           }
 
@@ -230,18 +248,10 @@ Do not include any text after the closing </Answer> tag.`;
             if (closeIdx !== -1) {
               answerComplete = true;
               const answerContent = answerBuffer.substring(0, closeIdx);
-              messageAgent.content = answerContent;
-              messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
-              messageAgent.sourceDocumentIds = retrievedChunks.map(c => c.documentId);
-              messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
-              messageAgent.modelVersion = 'gemini-2.5-flash';
-              messageAgent.promptVersion = 'v1';
-              console.log('create new message ran for llm', messageAgent);
-              await createNewMessage(messageAgent);
+              await saveAgentMessage(messageAgent, answerContent, retrievedChunks, controller, encoder);
               controller.enqueue(encoder.encode(answerContent));
               answerBuffer = answerBuffer.substring(closeIdx + '</Answer>'.length);
             } else {
-              // Stream the chunk
               controller.enqueue(encoder.encode(text));
             }
           }
@@ -249,19 +259,18 @@ Do not include any text after the closing </Answer> tag.`;
 
         // If stream ended but we never found closing tag, save what we have
         if (foundAnswerTag && !answerComplete && answerBuffer.length > 0) {
-          messageAgent.content = answerBuffer;
-          messageAgent.sourceChunkIds = retrievedChunks.map(c => c.id);
-          messageAgent.retrievalScores = retrievedChunks.map(c => c.score);
-          messageAgent.modelVersion = 'gemini-2.5-flash';
-          messageAgent.promptVersion = 'v1';
-          console.log('create new message ran for llm (stream ended)', messageAgent);
-          await createNewMessage(messageAgent);
+          await saveAgentMessage(messageAgent, answerBuffer, retrievedChunks, controller, encoder);
+        } else if (!foundAnswerTag) {
+          logger.warn('LLM response did not contain <Answer> tag', { correlationId });
         }
       } catch (error) {
-        console.error('Gemini processing stream error:', error);
+        llmSpan.end({ level: 'ERROR', output: { error: String(error) } });
+        logger.error('Gemini processing stream error', error, { correlationId });
         controller.error(error);
+        throw Errors.llmStreamingFailed({ correlationId }, error, correlationId);
       } finally {
         controller.close();
+        llmSpan.end({ output: { answerLength: messageAgent.content.length } });
       }
     },
   });
@@ -274,4 +283,27 @@ Do not include any text after the closing </Answer> tag.`;
       'X-agent-message-object': JSON.stringify(messageAgent),
     },
   });
-}
+
+  async function saveAgentMessage(
+    msg: Message,
+    content: string,
+    chunks: typeof retrievedChunks,
+    controller: ReadableStreamDefaultController,
+    encoder: TextEncoder
+  ) {
+    msg.content = content;
+    msg.sourceChunkIds = chunks.map(c => c.id);
+    msg.sourceDocumentIds = chunks.map(c => c.documentId);
+    msg.retrievalScores = chunks.map(c => c.score);
+    msg.modelVersion = 'gemini-2.5-flash';
+    msg.promptVersion = 'v1';
+    
+    try {
+      await createNewMessage(msg);
+      logger.info('Agent message saved', { messageId: msg.id, chatId, correlationId });
+    } catch (error) {
+      logger.error('Failed to save agent message', error, { messageId: msg.id, chatId, correlationId });
+      throw Errors.chatMessageFailed({ messageId: msg.id, chatId }, error, correlationId);
+    }
+  }
+});

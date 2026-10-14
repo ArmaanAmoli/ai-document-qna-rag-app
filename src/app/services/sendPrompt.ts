@@ -1,11 +1,12 @@
 import { MessagePropInterface } from '@/types/componentProps.types';
-import { sendChatMessage } from './chat-api-call';
+import { sendChatMessage, apiFetch } from './chat-api-call';
 import { displayStreamingReply } from './displayStreamingReply';
+import { logger } from '@/lib/logger';
 
 export async function sendPrompt(props: MessagePropInterface, isDuplicate: boolean): Promise<void> {
-  console.log('send prompt was called', props, isDuplicate);
-  //adding user prompt to the message array
-  // setMessagesArray(prev => [...prev , {role:'user' , content:props.prompt}])
+  const correlationId = (window as any).__RECALL_CORRELATION_ID__;
+  
+  logger.debug('sendPrompt called', { isDuplicate, chatId: props.chatId, correlationId });
 
   if (props.file != null) {
     const data = new FormData();
@@ -13,19 +14,25 @@ export async function sendPrompt(props: MessagePropInterface, isDuplicate: boole
     if (props.messagesArray.length === 0) {
       data.append('message', props.prompt);
     }
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: data,
-    });
-    if (response.redirected) {
-      window.location.href = response.url;
-      return;
-    }
-    const res = await response.json();
-    if ('success' in res) {
-      if (res.success == true && 'documentId' in res) {
-        const documentId = res.documentId;
-        localStorage.setItem('documentId', documentId);
+    
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: data,
+      });
+
+      if (response.redirected) {
+        window.location.href = response.url;
+        return;
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: { message: 'Upload failed' } }));
+        throw new Error(error.error?.message || 'Upload failed');
+      }
+
+      const res = await response.json();
+      if (res.success && res.documentId) {
         const question = props.prompt;
         const reply = await sendChatMessage(
           question,
@@ -35,6 +42,9 @@ export async function sendPrompt(props: MessagePropInterface, isDuplicate: boole
         );
         await displayStreamingReply(reply, props, isDuplicate);
       }
+    } catch (error) {
+      logger.error('Upload failed', error as Error, { correlationId });
+      throw error;
     }
   } else {
     const question = props.prompt;
